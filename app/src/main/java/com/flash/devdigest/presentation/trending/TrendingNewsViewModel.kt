@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.combine
 import com.flash.devdigest.core.Result
 import javax.inject.Inject
 
@@ -30,7 +31,8 @@ class TrendingNewsViewModel @Inject constructor(
     private val _state = MutableStateFlow(TrendingNewsState())
     val state: StateFlow<TrendingNewsState> = _state.asStateFlow()
 
-    private val _searchResults = MutableStateFlow<List<com.flash.devdigest.domain.model.News>?>(null)
+    private val _searchResults =
+        MutableStateFlow<List<com.flash.devdigest.domain.model.News>?>(null)
 
     init {
         observeNews()
@@ -54,13 +56,16 @@ class TrendingNewsViewModel @Inject constructor(
 
     private fun observeNews() {
         viewModelScope.launch {
-            observeTrendingNewsUseCase().collect { news ->
-                val baseList = _searchResults.value ?: news
-
+            combine(
+                observeTrendingNewsUseCase(),
+                _searchResults
+            ) { news, searchResults ->
+                searchResults ?: news
+            }.collect { list ->
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        news = baseList,
+                        news = list,
                         error = null
                     )
                 }
@@ -70,11 +75,9 @@ class TrendingNewsViewModel @Inject constructor(
 
     private fun refresh() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
             when (val result = refreshTrendingNewsUseCase()) {
                 is Result.Success -> {
-                    // No-op. Room Flow will emit updated data which observeNews() collects.
-                    Unit
+                    _state.update { it.copy(isLoading = true) }
                 }
 
                 is Result.Error -> {
@@ -88,6 +91,7 @@ class TrendingNewsViewModel @Inject constructor(
             }
         }
     }
+
     private fun search(query: String) {
         val current = _state.value.news
 
@@ -98,7 +102,7 @@ class TrendingNewsViewModel @Inject constructor(
 
         _searchResults.value = current.filter {
             it.title.contains(query, ignoreCase = true) ||
-            it.author.contains(query, ignoreCase = true)
+                    it.author.contains(query, ignoreCase = true)
         }
     }
 

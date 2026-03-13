@@ -2,19 +2,22 @@ package com.flash.devdigest.presentation.trending
 
 import android.os.Bundle
 import android.util.Log
+import android.view.KeyEvent
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.widget.Toast
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.flash.devdigest.R
 import com.flash.devdigest.databinding.FragmentTrendingNewsBinding
 import dagger.hilt.android.AndroidEntryPoint
 import dev.androidbroadcast.vbpd.viewBinding
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.Lifecycle
-import androidx.recyclerview.widget.LinearLayoutManager
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -27,6 +30,56 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
         super.onViewCreated(view, savedInstanceState)
         setupRecyclerView()
         observeState()
+        setupSearchButton()
+        observeSearchField()
+    }
+
+    private fun setupSearchButton() {
+        binding.btnSearch.setOnClickListener {
+            val query = binding.etSearch.text.toString()
+            if (query.isNotBlank()) {
+                viewModel.processIntent(TrendingNewsIntent.Search(query))
+            } else {
+                viewModel.processIntent(TrendingNewsIntent.ClearSearch)
+            }
+        }
+    }
+
+    private fun observeSearchField() {
+        binding.etSearch.doAfterTextChanged { text ->
+            val query = text?.toString().orEmpty()
+
+            if (query.isBlank()) {
+                viewModel.processIntent(TrendingNewsIntent.ClearSearch)
+            } else {
+                viewModel.processIntent(TrendingNewsIntent.Search(query))
+            }
+        }
+        binding.etSearch.setOnEditorActionListener { _, actionId, event ->
+
+            val isKeyboardEnter =
+                event?.keyCode == KeyEvent.KEYCODE_ENTER &&
+                        event.action == KeyEvent.ACTION_DOWN
+
+            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
+                actionId == EditorInfo.IME_ACTION_DONE ||
+                actionId == EditorInfo.IME_ACTION_UNSPECIFIED ||
+                isKeyboardEnter
+            ) {
+                val query = binding.etSearch.text.toString()
+
+                if (query.isNotBlank()) {
+                    viewModel.processIntent(TrendingNewsIntent.Search(query))
+                } else {
+                    viewModel.processIntent(TrendingNewsIntent.ClearSearch)
+                }
+
+                true
+            } else {
+                false
+            }
+        }
+
     }
 
     private fun setupRecyclerView() {
@@ -43,9 +96,9 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
             findNavController().navigate(action)
         }
 
-//        adapter.setOnFavoriteClickListener { repo ->
-//            viewModel.toggleFavorite(repo)
-//        }
+        adapter.setOnFavoriteClickListener { news ->
+            viewModel.processIntent(TrendingNewsIntent.ToggleFavorite(news.id))
+        }
     }
 
     private fun observeState() {
