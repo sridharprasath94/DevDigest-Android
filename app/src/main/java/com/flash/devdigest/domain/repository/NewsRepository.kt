@@ -2,6 +2,7 @@ package com.flash.devdigest.domain.repository
 
 import com.flash.devdigest.domain.model.News
 import kotlinx.coroutines.flow.Flow
+import com.flash.devdigest.core.Result
 
 interface NewsRepository {
 
@@ -9,7 +10,7 @@ interface NewsRepository {
 
     fun observeFavorites(): Flow<List<News>>
 
-    suspend fun refreshTrendingNews()
+    suspend fun refreshTrendingNews() : Result<Unit>
 
-    suspend fun toggleFavorite(id: String)
+    suspend fun toggleFavorite(id: String) : Result<Unit>
 }

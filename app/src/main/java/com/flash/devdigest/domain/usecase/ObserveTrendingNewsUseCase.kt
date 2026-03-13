@@ -3,8 +3,9 @@ package com.flash.devdigest.domain.usecase
 import com.flash.devdigest.domain.model.News
 import com.flash.devdigest.domain.repository.NewsRepository
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
-class GetTrendingNewsUseCase(
+class ObserveTrendingNewsUseCase @Inject constructor(
     private val repository: NewsRepository
 ) {
 

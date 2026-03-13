@@ -1,5 +1,8 @@
 package com.flash.devdigest.data.repository
 
+import com.flash.devdigest.core.Result
+import com.flash.devdigest.data.error.NetworkErrorMapper
+import com.flash.devdigest.data.error.NetworkErrorMapper.toDomain
 import com.flash.devdigest.data.local.dao.NewsDao
 import com.flash.devdigest.data.local.mapper.toDomain
 import com.flash.devdigest.data.local.mapper.toEntity
@@ -14,6 +17,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 class NewsRepositoryImpl @Inject constructor(
     private val api: NewsApi,
@@ -35,21 +39,35 @@ class NewsRepositoryImpl @Inject constructor(
             }
     }
 
-    override suspend fun refreshTrendingNews() {
-        refreshMutex.withLock {
-            withContext(ioDispatcher) {
-                val entities = api.getFrontPage()
-                    .toDomainList()
-                    .map { it.toEntity() }
+    override suspend fun refreshTrendingNews(): Result<Unit> {
+        return withContext(ioDispatcher) {
+            refreshMutex.withLock {
+                try {
+                    val entities = api.getFrontPage()
+                        .toDomainList()
+                        .map { it.toEntity() }
 
-                newsDao.insertAll(entities)
+                    newsDao.insertAll(entities)
+                    Result.Success(Unit)
+                } catch (t: Throwable) {
+                    if (t is CancellationException) throw t
+                    Result.Error(NetworkErrorMapper.fromThrowable(t).toDomain())
+                }
             }
         }
+
     }
 
-    override suspend fun toggleFavorite(id: String) {
-        withContext(ioDispatcher) {
-            newsDao.toggleFavorite(id)
+    override suspend fun toggleFavorite(id: String): Result<Unit> {
+        return withContext(ioDispatcher) {
+            try {
+                newsDao.toggleFavorite(id)
+                Result.Success(Unit)
+            } catch (t: Throwable) {
+                if (t is CancellationException) throw t
+                Result.Error(NetworkErrorMapper.fromThrowable(t).toDomain())
+            }
+
         }
     }
 }
