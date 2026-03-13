@@ -1,7 +1,7 @@
 package com.flash.devdigest.domain.model
 
 data class News(
-    val id: String,
+    val id: Long,
     val title: String,
     val url: String?,
     val author: String,

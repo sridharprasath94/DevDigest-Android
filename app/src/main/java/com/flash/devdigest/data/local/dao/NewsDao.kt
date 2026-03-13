@@ -16,9 +16,12 @@ interface NewsDao {
     @Query("SELECT * FROM news WHERE isFavorite = 1")
     fun observeFavorites(): Flow<List<NewsEntity>>
 
+    @Query("SELECT id FROM news WHERE isFavorite = 1")
+    suspend fun getFavoriteIds(): List<Long>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(news: List<NewsEntity>)
 
     @Query("UPDATE news SET isFavorite = NOT isFavorite WHERE id = :id")
-    suspend fun toggleFavorite(id: String)
+    suspend fun toggleFavorite(id: Long)
 }

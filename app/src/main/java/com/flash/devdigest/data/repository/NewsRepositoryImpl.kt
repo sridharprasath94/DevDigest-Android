@@ -43,8 +43,13 @@ class NewsRepositoryImpl @Inject constructor(
         return withContext(ioDispatcher) {
             refreshMutex.withLock {
                 try {
+                    val favoriteIds = newsDao.getFavoriteIds().toSet()
+
                     val entities = api.getFrontPage()
                         .toDomainList()
+                        .map { news ->
+                            news.copy(isFavorite = favoriteIds.contains(news.id))
+                        }
                         .map { it.toEntity() }
 
                     newsDao.insertAll(entities)
@@ -58,16 +63,30 @@ class NewsRepositoryImpl @Inject constructor(
 
     }
 
-    override suspend fun toggleFavorite(id: String): Result<Unit> {
+    override suspend fun toggleFavorite(news: News): Result<Unit> {
         return withContext(ioDispatcher) {
             try {
-                newsDao.toggleFavorite(id)
+                newsDao.toggleFavorite(news.id)
                 Result.Success(Unit)
             } catch (t: Throwable) {
                 if (t is CancellationException) throw t
                 Result.Error(NetworkErrorMapper.fromThrowable(t).toDomain())
             }
 
+        }
+    }
+
+    override suspend fun searchNews(query: String): Result<List<News>> {
+        return withContext(ioDispatcher) {
+            try {
+                val news = api.searchNews(query)
+                    .toDomainList()
+
+                Result.Success(news)
+            } catch (t: Throwable) {
+                if (t is CancellationException) throw t
+                Result.Error(NetworkErrorMapper.fromThrowable(t).toDomain())
+            }
         }
     }
 }

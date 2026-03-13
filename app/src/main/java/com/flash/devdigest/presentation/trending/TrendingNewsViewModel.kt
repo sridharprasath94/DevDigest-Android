@@ -12,27 +12,32 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.combine
 import com.flash.devdigest.core.Result
+import com.flash.devdigest.domain.model.News
+import com.flash.devdigest.domain.usecase.SearchNewsUseCase
+import com.flash.devdigest.domain.usecase.ToggleFavoriteUseCase
 import javax.inject.Inject
 
 sealed class TrendingNewsIntent {
     object Load : TrendingNewsIntent()
     object Refresh : TrendingNewsIntent()
     data class Search(val query: String) : TrendingNewsIntent()
-    data class ToggleFavorite(val id: String) : TrendingNewsIntent()
+    data class ToggleFavorite(val news: News) : TrendingNewsIntent()
     object ClearSearch : TrendingNewsIntent()
 }
 
 @HiltViewModel
 class TrendingNewsViewModel @Inject constructor(
     private val observeTrendingNewsUseCase: ObserveTrendingNewsUseCase,
-    private val refreshTrendingNewsUseCase: RefreshTrendingNewsUseCase
+    private val refreshTrendingNewsUseCase: RefreshTrendingNewsUseCase,
+    private val searchNewsUseCase: SearchNewsUseCase,
+    private val toggleFavoriteUseCase: ToggleFavoriteUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TrendingNewsState())
     val state: StateFlow<TrendingNewsState> = _state.asStateFlow()
 
     private val _searchResults =
-        MutableStateFlow<List<com.flash.devdigest.domain.model.News>?>(null)
+        MutableStateFlow<List<News>?>(null)
 
     init {
         observeNews()
@@ -50,7 +55,7 @@ class TrendingNewsViewModel @Inject constructor(
                 _searchResults.value = null
             }
 
-            is TrendingNewsIntent.ToggleFavorite -> toggleFavorite(intent.id)
+            is TrendingNewsIntent.ToggleFavorite -> toggleFavorite(intent.news)
         }
     }
 
@@ -93,24 +98,48 @@ class TrendingNewsViewModel @Inject constructor(
     }
 
     private fun search(query: String) {
-        val current = _state.value.news
-
         if (query.isBlank()) {
             _searchResults.value = null
             return
         }
 
-        _searchResults.value = current.filter {
-            it.title.contains(query, ignoreCase = true) ||
-                    it.author.contains(query, ignoreCase = true)
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+
+            when (val result = searchNewsUseCase(query)) {
+                is Result.Success -> {
+                    _searchResults.value = result.data
+                    _state.update { it.copy(isLoading = false) }
+                }
+
+                is Result.Error -> {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error = UiError.fromDomain(result.error)
+                        )
+                    }
+                }
+            }
         }
     }
 
-    private fun toggleFavorite(id: String) {
-        val updated = _state.value.news.map {
-            if (it.id == id) it.copy(isFavorite = !it.isFavorite) else it
-        }
+    private fun toggleFavorite(news: News) {
+        viewModelScope.launch {
+            when (val result = toggleFavoriteUseCase(news)) {
+                is Result.Success -> {
+                    val updated = _state.value.news.map {
+                        if (it.id == news.id) it.copy(isFavorite = !it.isFavorite) else it
+                    }
+                    _state.update { it.copy(news = updated) }
+                }
 
-        _state.update { it.copy(news = updated) }
+                is Result.Error -> {
+                    _state.update {
+                        it.copy(error = UiError.fromDomain(result.error))
+                    }
+                }
+            }
+        }
     }
 }

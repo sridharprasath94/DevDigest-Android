@@ -97,7 +97,7 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
         }
 
         adapter.setOnFavoriteClickListener { news ->
-            viewModel.processIntent(TrendingNewsIntent.ToggleFavorite(news.id))
+            viewModel.processIntent(TrendingNewsIntent.ToggleFavorite(news))
         }
     }
 

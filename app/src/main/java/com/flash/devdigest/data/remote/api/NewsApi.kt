@@ -10,4 +10,10 @@ interface NewsApi {
     suspend fun getFrontPage(
         @Query("tags") tags: String = "front_page"
     ): NewsResponseDto
+
+    @GET("search")
+    suspend fun searchNews(
+        @Query("query") query: String,
+        @Query("tags") tags: String = "story"
+    ): NewsResponseDto
 }

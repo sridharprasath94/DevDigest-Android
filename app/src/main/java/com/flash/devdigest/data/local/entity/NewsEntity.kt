@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 data class NewsEntity(
 
     @PrimaryKey
-    val id: String,
+    val id: Long,
 
     val title: String,
 

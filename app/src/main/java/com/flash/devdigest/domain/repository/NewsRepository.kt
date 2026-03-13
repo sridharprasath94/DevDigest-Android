@@ -12,5 +12,7 @@ interface NewsRepository {
 
     suspend fun refreshTrendingNews() : Result<Unit>
 
-    suspend fun toggleFavorite(id: String) : Result<Unit>
+    suspend fun toggleFavorite(news: News) : Result<Unit>
+
+    suspend fun searchNews(query: String): Result<List<News>>
 }
