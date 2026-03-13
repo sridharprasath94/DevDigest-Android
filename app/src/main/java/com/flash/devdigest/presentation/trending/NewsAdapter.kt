@@ -1,0 +1,106 @@
+package com.flash.devdigest.presentation.trending
+
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
+import com.flash.devdigest.R
+import com.flash.devdigest.databinding.RowNewsBinding
+import com.flash.devdigest.domain.model.News
+import kotlin.time.Clock
+import kotlin.time.Instant
+
+class NewsAdapter :
+    ListAdapter<News, NewsAdapter.NewsViewHolder>(DiffCallback) {
+
+    private var onItemClick: ((News) -> Unit)? = null
+    private var onFavoriteClick: ((News) -> Unit)? = null
+
+    class NewsViewHolder(
+        private val binding: RowNewsBinding,
+        private val onItemClick: ((News) -> Unit)?,
+        private val onFavoriteClick: ((News) -> Unit)?
+    ) : RecyclerView.ViewHolder(binding.root) {
+
+
+        fun bind(news: News) {
+            binding.newsTitle.text = news.title
+            binding.newsAuthor.text = buildString {
+                append("by ")
+                append(news.author)
+            }
+            binding.newsPoints.text = buildString {
+                append(news.points)
+                append(" points")
+            }
+            binding.newsComments.text = buildString {
+                append(news.comments)
+                append(" comments")
+            }
+            binding.newsDate.text = formatDate(news.createdAt)
+
+            val iconRes =
+                if (news.isFavorite)
+                    R.drawable.ic_star_filled
+                else
+                    R.drawable.ic_star_outline
+
+            binding.ivFavorite.setImageResource(iconRes)
+
+            binding.ivFavorite.setOnClickListener {
+                onFavoriteClick?.invoke(news)
+            }
+
+            binding.root.setOnClickListener {
+                onItemClick?.invoke(news)
+            }
+        }
+
+
+        private fun formatDate(date: String): String {
+            val instant = Instant.parse(date)
+            val now = Clock.System.now()
+            val duration = now - instant
+
+            return when {
+                duration.inWholeHours < 1 -> "${duration.inWholeMinutes}m ago"
+                duration.inWholeHours < 24 -> "${duration.inWholeHours}h ago"
+                else -> "${duration.inWholeDays}d ago"
+            }
+        }
+    }
+
+    fun setOnItemClickListener(listener: (News) -> Unit) {
+        onItemClick = listener
+    }
+
+    fun setOnFavoriteClickListener(listener: (News) -> Unit) {
+        onFavoriteClick = listener
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NewsViewHolder {
+        val binding = RowNewsBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
+        return NewsViewHolder(binding, onItemClick, onFavoriteClick)
+    }
+
+    override fun onBindViewHolder(holder: NewsViewHolder, position: Int) {
+        holder.bind(getItem(position))
+    }
+
+
+    companion object DiffCallback : DiffUtil.ItemCallback<News>() {
+        override fun areItemsTheSame(oldItem: News, newItem: News): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItem: News, newItem: News): Boolean {
+            return oldItem == newItem
+        }
+    }
+
+}
