@@ -35,7 +35,7 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
 
         binding.recyclerView.adapter = adapter
 
-        adapter.setOnItemClickListener { repo ->
+        adapter.setOnItemClickListener { _ ->
             val action =
                 TrendingNewsFragmentDirections
                     .actionTrendingNewsFragmentToNewsDetailFragment()
