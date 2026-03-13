@@ -56,8 +56,6 @@ class TrendingNewsViewModel @Inject constructor(
     private fun refresh() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
-
-
             when (val result = refreshTrendingNewsUseCase()) {
                 is Result.Success -> {
                     // No-op. Room Flow will emit updated data which observeNews() collects.
