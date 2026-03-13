@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.flash.devdigest.NewsDetailFragmentDirections
 import com.flash.devdigest.R
 import com.flash.devdigest.databinding.FragmentNewsDetailBinding
 import dagger.hilt.android.AndroidEntryPoint
@@ -19,7 +18,7 @@ class NewsDetailFragment : Fragment(R.layout.fragment_news_detail) {
         super.onViewCreated(view, savedInstanceState)
 
         binding.buttonSecond.setOnClickListener {
-            findNavController().navigate(NewsDetailFragmentDirections.Companion.actionNewsDetailFragmentToTrendingFragment())
+            findNavController().navigate(NewsDetailFragmentDirections.actionNewsDetailFragmentToTrendingFragment())
         }
     }
 }
