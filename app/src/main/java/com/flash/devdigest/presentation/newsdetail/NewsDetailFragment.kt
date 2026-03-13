@@ -18,7 +18,7 @@ class NewsDetailFragment : Fragment(R.layout.fragment_news_detail) {
         super.onViewCreated(view, savedInstanceState)
 
         binding.buttonSecond.setOnClickListener {
-            findNavController().navigate(NewsDetailFragmentDirections.actionNewsDetailFragmentToTrendingFragment())
+            findNavController().navigate(NewsDetailFragmentDirections.actionNewsDetailFragmentToTrendingNewsFragment())
         }
     }
 }
