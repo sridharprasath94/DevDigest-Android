@@ -17,8 +17,8 @@ class NewsDetailFragment : Fragment(R.layout.fragment_news_detail) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.buttonSecond.setOnClickListener {
-            findNavController().navigate(NewsDetailFragmentDirections.actionNewsDetailFragmentToTrendingNewsFragment())
-        }
+//        binding.buttonSecond.setOnClickListener {
+//            findNavController().navigate(NewsDetailFragmentDirections.actionNewsDetailFragmentToTrendingNewsFragment())
+//        }
     }
 }

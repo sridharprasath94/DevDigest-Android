@@ -16,6 +16,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.flash.devdigest.R
 import com.flash.devdigest.databinding.FragmentTrendingNewsBinding
+import com.flash.devdigest.presentation.shared.NewsAdapter
 import dagger.hilt.android.AndroidEntryPoint
 import dev.androidbroadcast.vbpd.viewBinding
 import kotlinx.coroutines.launch
@@ -88,10 +89,10 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
 
         binding.recyclerView.adapter = adapter
 
-        adapter.setOnItemClickListener { _ ->
+        adapter.setOnItemClickListener { news ->
             val action =
                 TrendingNewsFragmentDirections
-                    .actionTrendingNewsFragmentToNewsDetailFragment()
+                    .actionTrendingToDetails(news)
 
             findNavController().navigate(action)
         }
