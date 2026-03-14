@@ -19,11 +19,11 @@ data class NewsDto(
 
 
 /**
- * DTO -> Domain mapping (Swift-style extension equivalent)
+ * DTO -> Domain mapping
  */
 fun NewsDto.toDomain(isFavorite: Boolean = false): News {
     return News(
-        id = objectID,
+        id = objectID.toLong(),
         title = title ?: "No Title",
         url = url ?: "",
         author = author ?: "Unknown",
@@ -34,4 +34,4 @@ fun NewsDto.toDomain(isFavorite: Boolean = false): News {
     )
 }
 
-fun NewsResponseDto.toDomainList(): List<News> = hits.map { it.toDomain() }
+fun NewsResponseDto.toDomainList(): List<News> = hits.map { it.toDomain(isFavorite = false) }

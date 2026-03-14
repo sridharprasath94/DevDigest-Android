@@ -3,26 +3,37 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/TrendingNewsFragment">
+    app:startDestination="@id/trendingNewsFragment">
 
     <fragment
-        android:id="@+id/TrendingNewsFragment"
+        android:id="@+id/trendingNewsFragment"
         android:name="com.flash.devdigest.presentation.trending.TrendingNewsFragment"
         android:label="@string/trending_fragment_label"
         tools:layout="@layout/fragment_trending_news">
 
         <action
-            android:id="@+id/action_TrendingNewsFragment_to_NewsDetailFragment"
+            android:id="@+id/action_trending_to_details"
             app:destination="@id/NewsDetailFragment" />
     </fragment>
+
+    <fragment
+        android:id="@+id/favoritesFragment"
+        android:name="com.flash.devdigest.presentation.favorites.FavoriteNewsFragment"
+        android:label="@string/favorites"
+        tools:layout="@layout/fragment_favorites">
+        <action
+            android:id="@+id/action_favorites_to_details"
+            app:destination="@id/NewsDetailFragment" />
+    </fragment>
+
     <fragment
         android:id="@+id/NewsDetailFragment"
         android:name="com.flash.devdigest.presentation.newsdetail.NewsDetailFragment"
         android:label="@string/news_detail_fragment_label"
         tools:layout="@layout/fragment_news_detail">
 
-        <action
-            android:id="@+id/action_NewsDetailFragment_to_TrendingNewsFragment"
-            app:destination="@id/TrendingNewsFragment" />
+        <argument
+            android:name="news"
+            app:argType="com.flash.devdigest.domain.model.News" />
     </fragment>
 </navigation>

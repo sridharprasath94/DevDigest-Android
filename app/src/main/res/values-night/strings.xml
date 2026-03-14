@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="favourites">Favourites</string>
+    <string name="trending">Trending</string>
+    <string name="favorites">Favorites</string>
+    <string name="search_news">Search News</string>
+    <string name="read_article">Read Article</string>
 </resources>

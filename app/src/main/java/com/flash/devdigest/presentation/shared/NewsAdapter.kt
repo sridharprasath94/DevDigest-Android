@@ -1,4 +1,4 @@
-package com.flash.devdigest.presentation.trending
+package com.flash.devdigest.presentation.shared
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -11,7 +11,7 @@ import com.flash.devdigest.domain.model.News
 import kotlin.time.Clock
 import kotlin.time.Instant
 
-class NewsAdapter :
+class NewsAdapter(private val enableFavoritesIcon: Boolean = true) :
     ListAdapter<News, NewsAdapter.NewsViewHolder>(DiffCallback) {
 
     private var onItemClick: ((News) -> Unit)? = null
@@ -20,7 +20,8 @@ class NewsAdapter :
     class NewsViewHolder(
         private val binding: RowNewsBinding,
         private val onItemClick: ((News) -> Unit)?,
-        private val onFavoriteClick: ((News) -> Unit)?
+        private val onFavoriteClick: ((News) -> Unit)?,
+        private val enableFavoritesIcon: Boolean
     ) : RecyclerView.ViewHolder(binding.root) {
 
 
@@ -40,17 +41,29 @@ class NewsAdapter :
             }
             binding.newsDate.text = formatDate(news.createdAt)
 
-            val iconRes =
-                if (news.isFavorite)
-                    R.drawable.ic_star_filled
-                else
-                    R.drawable.ic_star_outline
+            if (enableFavoritesIcon) {
+                val iconRes =
+                    if (news.isFavorite)
+                        R.drawable.ic_star_filled
+                    else
+                        R.drawable.ic_star_outline
 
-            binding.ivFavorite.setImageResource(iconRes)
+                val colorFilter = if (news.isFavorite) {
+                    binding.root.context.getColor(R.color.star_filled)
+                } else {
+                    binding.root.context.getColor(R.color.star_outline)
+                }
 
-            binding.ivFavorite.setOnClickListener {
-                onFavoriteClick?.invoke(news)
+                binding.ivFavorite.setImageResource(iconRes)
+                binding.ivFavorite.setColorFilter(colorFilter)
+
+                binding.ivFavorite.setOnClickListener {
+                    onFavoriteClick?.invoke(news)
+                }
+            } else {
+                binding.ivFavorite.visibility = android.view.View.GONE
             }
+
 
             binding.root.setOnClickListener {
                 onItemClick?.invoke(news)
@@ -59,7 +72,7 @@ class NewsAdapter :
 
 
         private fun formatDate(date: String): String {
-            val instant = Instant.parse(date)
+            val instant = Instant.Companion.parse(date)
             val now = Clock.System.now()
             val duration = now - instant
 
@@ -85,7 +98,7 @@ class NewsAdapter :
             parent,
             false
         )
-        return NewsViewHolder(binding, onItemClick, onFavoriteClick)
+        return NewsViewHolder(binding, onItemClick, onFavoriteClick, enableFavoritesIcon)
     }
 
     override fun onBindViewHolder(holder: NewsViewHolder, position: Int) {

@@ -10,30 +10,52 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.combine
 import com.flash.devdigest.core.Result
+import com.flash.devdigest.domain.model.News
+import com.flash.devdigest.domain.usecase.SearchNewsUseCase
+import com.flash.devdigest.domain.usecase.ToggleFavoriteUseCase
+import com.flash.devdigest.presentation.error.UIError
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import javax.inject.Inject
 
 sealed class TrendingNewsIntent {
     object Load : TrendingNewsIntent()
     object Refresh : TrendingNewsIntent()
     data class Search(val query: String) : TrendingNewsIntent()
-    data class ToggleFavorite(val id: String) : TrendingNewsIntent()
+    data class OnSearchQueryChanged(val query: String) : TrendingNewsIntent()
+    data class ToggleFavorite(val news: News) : TrendingNewsIntent()
     object ClearSearch : TrendingNewsIntent()
 }
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class TrendingNewsViewModel @Inject constructor(
     private val observeTrendingNewsUseCase: ObserveTrendingNewsUseCase,
-    private val refreshTrendingNewsUseCase: RefreshTrendingNewsUseCase
+    private val refreshTrendingNewsUseCase: RefreshTrendingNewsUseCase,
+    private val searchNewsUseCase: SearchNewsUseCase,
+    private val toggleFavoriteUseCase: ToggleFavoriteUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TrendingNewsState())
     val state: StateFlow<TrendingNewsState> = _state.asStateFlow()
 
-    private val _searchResults = MutableStateFlow<List<com.flash.devdigest.domain.model.News>?>(null)
+    private val searchQuery = MutableStateFlow("")
+
+    private val _events = MutableSharedFlow<UIError>()
+    val events = _events.asSharedFlow()
+
+    private val _searchResults =
+        MutableStateFlow<List<News>?>(null)
 
     init {
         observeNews()
+        observeSearchQuery()
         processIntent(TrendingNewsIntent.Load)
     }
 
@@ -42,71 +64,117 @@ class TrendingNewsViewModel @Inject constructor(
             TrendingNewsIntent.Load -> refresh()
             TrendingNewsIntent.Refresh -> refresh()
 
-            is TrendingNewsIntent.Search -> search(intent.query)
+            is TrendingNewsIntent.Search -> performSearch(intent.query)
+
+            is TrendingNewsIntent.OnSearchQueryChanged -> searchQuery.value = intent.query
 
             TrendingNewsIntent.ClearSearch -> {
                 _searchResults.value = null
             }
 
-            is TrendingNewsIntent.ToggleFavorite -> toggleFavorite(intent.id)
+            is TrendingNewsIntent.ToggleFavorite -> toggleFavorite(intent.news)
         }
     }
 
     private fun observeNews() {
         viewModelScope.launch {
-            observeTrendingNewsUseCase().collect { news ->
-                val baseList = _searchResults.value ?: news
-
+            combine(
+                observeTrendingNewsUseCase(),
+                _searchResults
+            ) { news, searchResults ->
+                searchResults ?: news
+            }.collect { list ->
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        news = baseList,
-                        error = null
+                        news = list,
                     )
                 }
             }
         }
     }
 
+    private fun observeSearchQuery() {
+        viewModelScope.launch {
+            searchQuery
+                .debounce(400)
+                .distinctUntilChanged()
+                .collectLatest { query ->
+                    if (query.isBlank()) {
+                        processIntent(TrendingNewsIntent.ClearSearch)
+                    } else {
+                        performSearch(query)
+                    }
+                }
+        }
+    }
+
     private fun refresh() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
             when (val result = refreshTrendingNewsUseCase()) {
                 is Result.Success -> {
-                    // No-op. Room Flow will emit updated data which observeNews() collects.
-                    Unit
+                    _state.update { it.copy(isLoading = true) }
                 }
 
                 is Result.Error -> {
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            error = UiError.fromDomain(result.error)
                         )
                     }
+                    _events.emit(UIError.from(result.error))
                 }
             }
         }
     }
-    private fun search(query: String) {
-        val current = _state.value.news
 
+    private fun performSearch(query: String) {
         if (query.isBlank()) {
             _searchResults.value = null
             return
         }
 
-        _searchResults.value = current.filter {
-            it.title.contains(query, ignoreCase = true) ||
-            it.author.contains(query, ignoreCase = true)
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+
+            when (val result = searchNewsUseCase(query)) {
+                is Result.Success -> {
+                    _searchResults.value = result.data
+                    _state.update { it.copy(isLoading = false) }
+                }
+
+                is Result.Error -> {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                        )
+                    }
+                    _events.emit(UIError.from(result.error))
+                }
+            }
         }
     }
 
-    private fun toggleFavorite(id: String) {
-        val updated = _state.value.news.map {
-            if (it.id == id) it.copy(isFavorite = !it.isFavorite) else it
-        }
+    private fun toggleFavorite(news: News) {
+        viewModelScope.launch {
+            when (val result = toggleFavoriteUseCase(news)) {
+                is Result.Success -> {
+                    _searchResults.value = _searchResults.value?.map {
+                        if (it.id == news.id)
+                            it.copy(isFavorite = !it.isFavorite)
+                        else it
+                    }
+                }
 
-        _state.update { it.copy(news = updated) }
+                is Result.Error -> {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                        )
+                    }
+                    _events.emit(UIError.from(result.error))
+                }
+            }
+        }
     }
 }

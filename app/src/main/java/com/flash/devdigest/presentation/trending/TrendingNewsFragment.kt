@@ -1,20 +1,21 @@
 package com.flash.devdigest.presentation.trending
 
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.Toast
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
-import androidx.navigation.fragment.findNavController
-import com.flash.devdigest.R
-import com.flash.devdigest.databinding.FragmentTrendingNewsBinding
-import dagger.hilt.android.AndroidEntryPoint
-import dev.androidbroadcast.vbpd.viewBinding
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.Lifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.flash.devdigest.R
+import com.flash.devdigest.databinding.FragmentTrendingNewsBinding
+import com.flash.devdigest.presentation.shared.NewsAdapter
+import dagger.hilt.android.AndroidEntryPoint
+import dev.androidbroadcast.vbpd.viewBinding
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -27,6 +28,19 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
         super.onViewCreated(view, savedInstanceState)
         setupRecyclerView()
         observeState()
+        observeEvents()
+        observeSearchField()
+    }
+
+    private fun observeSearchField() {
+        binding.etSearch.doAfterTextChanged { text ->
+            viewModel.processIntent(
+                TrendingNewsIntent.OnSearchQueryChanged(
+                    text?.toString().orEmpty()
+                )
+            )
+        }
+
     }
 
     private fun setupRecyclerView() {
@@ -35,56 +49,53 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
 
         binding.recyclerView.adapter = adapter
 
-        adapter.setOnItemClickListener { _ ->
+        binding.swipeRefresh.setOnRefreshListener {
+            viewModel.processIntent(TrendingNewsIntent.Refresh)
+        }
+
+        adapter.setOnItemClickListener { news ->
             val action =
                 TrendingNewsFragmentDirections
-                    .actionTrendingNewsFragmentToNewsDetailFragment()
+                    .actionTrendingToDetails(news)
 
             findNavController().navigate(action)
         }
 
-//        adapter.setOnFavoriteClickListener { repo ->
-//            viewModel.toggleFavorite(repo)
-//        }
+        adapter.setOnFavoriteClickListener { news ->
+            viewModel.processIntent(TrendingNewsIntent.ToggleFavorite(news))
+        }
     }
 
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
-                    Log.d("TrendingNewsFragment", "State updated: $state")
+                    binding.swipeRefresh.isRefreshing = state.isLoading
                     when {
                         state.isLoading && state.news.isEmpty() -> {
                             binding.fullScreenLoader.visibility = View.VISIBLE
-                            adapter.submitList(emptyList())
-                        }
-
-                        state.error != null -> {
-                            binding.fullScreenLoader.visibility = View.GONE
-                            adapter.submitList(emptyList())
-                            Toast.makeText(
-                                requireContext(),
-                                when (state.error) {
-                                    UiError.NetworkUnavailable -> "Network unavailable. Please check your connection."
-                                    UiError.RateLimitExceeded -> "API rate limit exceeded. Please try again later."
-                                    UiError.InvalidRequest -> "Invalid request. Please try again."
-                                    UiError.Unknown -> "An unknown error occurred. Please try again."
-                                },
-                                Toast.LENGTH_SHORT
-                            ).show()
                         }
 
                         else -> {
-                            Log.d("TrendingNewsFragment", "Displaying news: ${state.news.size} items")
                             binding.fullScreenLoader.visibility = View.GONE
-                            adapter.submitList(state.news) {
-                                binding.recyclerView.scrollToPosition(0)
-                            }
+
+                            adapter.submitList(state.news)
                         }
                     }
                 }
             }
         }
+    }
 
+    private fun observeEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.events.collect { error ->
+                    Toast.makeText(requireContext(), error.message, Toast.LENGTH_SHORT)
+                        .show()
+                }
+
+            }
+        }
     }
 }

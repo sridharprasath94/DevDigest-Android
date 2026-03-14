@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">DevDigest</string>
     <string name="action_settings">Settings</string>
+    <string name="trending">Trending</string>
+    <string name="favorites">Favorites</string>
     <!-- Strings used for fragments for navigation -->
     <string name="trending_fragment_label">Trending News</string>
     <string name="news_detail_fragment_label">News Detail</string>
@@ -44,4 +46,6 @@
         vestibulum. Fusce dictum libero quis erat maximus, vitae volutpat diam dignissim.
     </string>
     <string name="favourites">Favourites</string>
+    <string name="search_news">Search News</string>
+    <string name="read_article">Read Article</string>
 </resources>
