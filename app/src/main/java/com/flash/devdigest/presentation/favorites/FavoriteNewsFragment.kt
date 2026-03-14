@@ -2,7 +2,6 @@ package com.flash.devdigest.presentation.favorites
 
 import android.os.Bundle
 import android.view.View
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -16,7 +15,6 @@ import com.flash.devdigest.presentation.shared.NewsAdapter
 import dagger.hilt.android.AndroidEntryPoint
 import dev.androidbroadcast.vbpd.viewBinding
 import kotlinx.coroutines.launch
-import kotlin.getValue
 
 @AndroidEntryPoint
 class FavoriteNewsFragment :
@@ -56,20 +54,11 @@ class FavoriteNewsFragment :
                     when {
                         state.isLoading && state.news.isEmpty() -> {
                             binding.fullScreenLoader.visibility = View.VISIBLE
-                            adapter.submitList(emptyList())
-                        }
-
-                        state.error != null -> {
-                            binding.fullScreenLoader.visibility = View.GONE
-                            adapter.submitList(emptyList())
-                            Toast.makeText(requireContext(), state.error, Toast.LENGTH_SHORT).show()
                         }
 
                         else -> {
                             binding.fullScreenLoader.visibility = View.GONE
-                            adapter.submitList(state.news) {
-                                binding.recyclerView.scrollToPosition(0)
-                            }
+                            adapter.submitList(state.news)
                         }
                     }
                 }
