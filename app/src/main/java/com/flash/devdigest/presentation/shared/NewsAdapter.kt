@@ -48,7 +48,14 @@ class NewsAdapter(private val enableFavoritesIcon: Boolean = true) :
                     else
                         R.drawable.ic_star_outline
 
+                val colorFilter = if (news.isFavorite) {
+                    binding.root.context.getColor(R.color.star_filled)
+                } else {
+                    binding.root.context.getColor(R.color.star_outline)
+                }
+
                 binding.ivFavorite.setImageResource(iconRes)
+                binding.ivFavorite.setColorFilter(colorFilter)
 
                 binding.ivFavorite.setOnClickListener {
                     onFavoriteClick?.invoke(news)

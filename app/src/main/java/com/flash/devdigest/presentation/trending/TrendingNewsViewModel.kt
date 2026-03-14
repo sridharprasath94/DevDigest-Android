@@ -15,16 +15,25 @@ import com.flash.devdigest.core.Result
 import com.flash.devdigest.domain.model.News
 import com.flash.devdigest.domain.usecase.SearchNewsUseCase
 import com.flash.devdigest.domain.usecase.ToggleFavoriteUseCase
+import com.flash.devdigest.presentation.error.UIError
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import javax.inject.Inject
 
 sealed class TrendingNewsIntent {
     object Load : TrendingNewsIntent()
     object Refresh : TrendingNewsIntent()
     data class Search(val query: String) : TrendingNewsIntent()
+    data class OnSearchQueryChanged(val query: String) : TrendingNewsIntent()
     data class ToggleFavorite(val news: News) : TrendingNewsIntent()
     object ClearSearch : TrendingNewsIntent()
 }
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class TrendingNewsViewModel @Inject constructor(
     private val observeTrendingNewsUseCase: ObserveTrendingNewsUseCase,
@@ -36,11 +45,17 @@ class TrendingNewsViewModel @Inject constructor(
     private val _state = MutableStateFlow(TrendingNewsState())
     val state: StateFlow<TrendingNewsState> = _state.asStateFlow()
 
+    private val searchQuery = MutableStateFlow("")
+
+    private val _events = MutableSharedFlow<UIError>()
+    val events = _events.asSharedFlow()
+
     private val _searchResults =
         MutableStateFlow<List<News>?>(null)
 
     init {
         observeNews()
+        observeSearchQuery()
         processIntent(TrendingNewsIntent.Load)
     }
 
@@ -49,7 +64,9 @@ class TrendingNewsViewModel @Inject constructor(
             TrendingNewsIntent.Load -> refresh()
             TrendingNewsIntent.Refresh -> refresh()
 
-            is TrendingNewsIntent.Search -> search(intent.query)
+            is TrendingNewsIntent.Search -> performSearch(intent.query)
+
+            is TrendingNewsIntent.OnSearchQueryChanged -> searchQuery.value = intent.query
 
             TrendingNewsIntent.ClearSearch -> {
                 _searchResults.value = null
@@ -71,10 +88,24 @@ class TrendingNewsViewModel @Inject constructor(
                     it.copy(
                         isLoading = false,
                         news = list,
-                        error = null
                     )
                 }
             }
+        }
+    }
+
+    private fun observeSearchQuery() {
+        viewModelScope.launch {
+            searchQuery
+                .debounce(400)
+                .distinctUntilChanged()
+                .collectLatest { query ->
+                    if (query.isBlank()) {
+                        processIntent(TrendingNewsIntent.ClearSearch)
+                    } else {
+                        performSearch(query)
+                    }
+                }
         }
     }
 
@@ -89,15 +120,15 @@ class TrendingNewsViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            error = UiError.fromDomain(result.error)
                         )
                     }
+                    _events.emit(UIError.from(result.error))
                 }
             }
         }
     }
 
-    private fun search(query: String) {
+    private fun performSearch(query: String) {
         if (query.isBlank()) {
             _searchResults.value = null
             return
@@ -116,9 +147,9 @@ class TrendingNewsViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            error = UiError.fromDomain(result.error)
                         )
                     }
+                    _events.emit(UIError.from(result.error))
                 }
             }
         }
@@ -128,16 +159,20 @@ class TrendingNewsViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = toggleFavoriteUseCase(news)) {
                 is Result.Success -> {
-                    val updated = _state.value.news.map {
-                        if (it.id == news.id) it.copy(isFavorite = !it.isFavorite) else it
+                    _searchResults.value = _searchResults.value?.map {
+                        if (it.id == news.id)
+                            it.copy(isFavorite = !it.isFavorite)
+                        else it
                     }
-                    _state.update { it.copy(news = updated) }
                 }
 
                 is Result.Error -> {
                     _state.update {
-                        it.copy(error = UiError.fromDomain(result.error))
+                        it.copy(
+                            isLoading = false,
+                        )
                     }
+                    _events.emit(UIError.from(result.error))
                 }
             }
         }

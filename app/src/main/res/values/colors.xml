@@ -2,4 +2,6 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="star_filled">#FFC107</color>   <!-- gold -->
+    <color name="star_outline">#BDBDBD</color>  <!-- gray -->
 </resources>

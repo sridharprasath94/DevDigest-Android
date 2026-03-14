@@ -1,10 +1,7 @@
 package com.flash.devdigest.presentation.trending
 
 import android.os.Bundle
-import android.util.Log
-import android.view.KeyEvent
 import android.view.View
-import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
@@ -31,54 +28,17 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
         super.onViewCreated(view, savedInstanceState)
         setupRecyclerView()
         observeState()
-        setupSearchButton()
+        observeEvents()
         observeSearchField()
-    }
-
-    private fun setupSearchButton() {
-        binding.btnSearch.setOnClickListener {
-            val query = binding.etSearch.text.toString()
-            if (query.isNotBlank()) {
-                viewModel.processIntent(TrendingNewsIntent.Search(query))
-            } else {
-                viewModel.processIntent(TrendingNewsIntent.ClearSearch)
-            }
-        }
     }
 
     private fun observeSearchField() {
         binding.etSearch.doAfterTextChanged { text ->
-            val query = text?.toString().orEmpty()
-
-            if (query.isBlank()) {
-                viewModel.processIntent(TrendingNewsIntent.ClearSearch)
-            } else {
-                viewModel.processIntent(TrendingNewsIntent.Search(query))
-            }
-        }
-        binding.etSearch.setOnEditorActionListener { _, actionId, event ->
-
-            val isKeyboardEnter =
-                event?.keyCode == KeyEvent.KEYCODE_ENTER &&
-                        event.action == KeyEvent.ACTION_DOWN
-
-            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
-                actionId == EditorInfo.IME_ACTION_DONE ||
-                actionId == EditorInfo.IME_ACTION_UNSPECIFIED ||
-                isKeyboardEnter
-            ) {
-                val query = binding.etSearch.text.toString()
-
-                if (query.isNotBlank()) {
-                    viewModel.processIntent(TrendingNewsIntent.Search(query))
-                } else {
-                    viewModel.processIntent(TrendingNewsIntent.ClearSearch)
-                }
-
-                true
-            } else {
-                false
-            }
+            viewModel.processIntent(
+                TrendingNewsIntent.OnSearchQueryChanged(
+                    text?.toString().orEmpty()
+                )
+            )
         }
 
     }
@@ -88,6 +48,10 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
             LinearLayoutManager(requireContext())
 
         binding.recyclerView.adapter = adapter
+
+        binding.swipeRefresh.setOnRefreshListener {
+            viewModel.processIntent(TrendingNewsIntent.Refresh)
+        }
 
         adapter.setOnItemClickListener { news ->
             val action =
@@ -106,39 +70,32 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
-                    Log.d("TrendingNewsFragment", "State updated: $state")
+                    binding.swipeRefresh.isRefreshing = state.isLoading
                     when {
                         state.isLoading && state.news.isEmpty() -> {
                             binding.fullScreenLoader.visibility = View.VISIBLE
-                            adapter.submitList(emptyList())
-                        }
-
-                        state.error != null -> {
-                            binding.fullScreenLoader.visibility = View.GONE
-                            adapter.submitList(emptyList())
-                            Toast.makeText(
-                                requireContext(),
-                                when (state.error) {
-                                    UiError.NetworkUnavailable -> "Network unavailable. Please check your connection."
-                                    UiError.RateLimitExceeded -> "API rate limit exceeded. Please try again later."
-                                    UiError.InvalidRequest -> "Invalid request. Please try again."
-                                    UiError.Unknown -> "An unknown error occurred. Please try again."
-                                },
-                                Toast.LENGTH_SHORT
-                            ).show()
                         }
 
                         else -> {
-                            Log.d("TrendingNewsFragment", "Displaying news: ${state.news.size} items")
                             binding.fullScreenLoader.visibility = View.GONE
-                            adapter.submitList(state.news) {
-                                binding.recyclerView.scrollToPosition(0)
-                            }
+
+                            adapter.submitList(state.news)
                         }
                     }
                 }
             }
         }
+    }
 
+    private fun observeEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.events.collect { error ->
+                    Toast.makeText(requireContext(), error.message, Toast.LENGTH_SHORT)
+                        .show()
+                }
+
+            }
+        }
     }
 }

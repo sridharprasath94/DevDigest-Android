@@ -83,10 +83,11 @@
 
     <ImageView
         android:id="@+id/ivFavorite"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:contentDescription="@string/favourites"
         android:src="@drawable/ic_star_outline"
+        android:padding="9dp"
         android:clickable="true"
         android:focusable="true"
         app:layout_constraintEnd_toEndOf="parent"
