@@ -3,4 +3,5 @@
     <string name="trending">Trending</string>
     <string name="favorites">Favorites</string>
     <string name="search_news">Search News</string>
+    <string name="read_article">Read Article</string>
 </resources>
