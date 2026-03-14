@@ -10,6 +10,6 @@ class ObserveTrendingNewsUseCase @Inject constructor(
 ) {
 
     operator fun invoke(): Flow<List<News>> {
-        return repository.observeTrending()
+        return repository.observeTrendingNews()
     }
 }

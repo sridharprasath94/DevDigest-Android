@@ -7,6 +7,7 @@ import com.flash.devdigest.data.local.dao.NewsDao
 import com.flash.devdigest.data.local.mapper.toDomain
 import com.flash.devdigest.data.local.mapper.toEntity
 import com.flash.devdigest.data.remote.api.NewsApi
+import com.flash.devdigest.data.remote.dto.NewsResponseDto
 import com.flash.devdigest.data.remote.dto.toDomainList
 import com.flash.devdigest.domain.model.News
 import com.flash.devdigest.domain.repository.NewsRepository
@@ -25,14 +26,15 @@ class NewsRepositoryImpl @Inject constructor(
     private val ioDispatcher: CoroutineDispatcher
 ) : NewsRepository {
     private val refreshMutex = Mutex()
-    override fun observeTrending(): Flow<List<News>> {
+
+    override fun observeTrendingNews(): Flow<List<News>> {
         return newsDao.observeTrending()
             .map { entities ->
                 entities.map { it.toDomain() }
             }
     }
 
-    override fun observeFavorites(): Flow<List<News>> {
+    override fun observeFavoriteNews(): Flow<List<News>> {
         return newsDao.observeFavorites()
             .map { entities ->
                 entities.map { it.toDomain() }
@@ -43,16 +45,15 @@ class NewsRepositoryImpl @Inject constructor(
         return withContext(ioDispatcher) {
             refreshMutex.withLock {
                 try {
-                    val favoriteIds = newsDao.getFavoriteIds().toSet()
-
-                    val entities = api.getFrontPage()
+                    val response: NewsResponseDto = api.getFrontPage()
+                    val favoriteIds = newsDao.getFavoriteIdsSet()
+                    val entities = response
                         .toDomainList()
-                        .map { news ->
-                            news.copy(isFavorite = favoriteIds.contains(news.id))
-                        }
+                        .applyFavorites(favoriteIds)
                         .map { it.toEntity() }
 
-                    newsDao.insertAll(entities)
+                    newsDao.clearNews()
+                    newsDao.insertAllNews(entities)
                     Result.Success(Unit)
                 } catch (t: Throwable) {
                     if (t is CancellationException) throw t
@@ -60,12 +61,32 @@ class NewsRepositoryImpl @Inject constructor(
                 }
             }
         }
+    }
 
+    override suspend fun searchNews(query: String): Result<List<News>> {
+        return withContext(ioDispatcher) {
+            try {
+                val response: NewsResponseDto = api.searchNews(query)
+                val favoriteIds = newsDao.getFavoriteIdsSet()
+                val news: List<News> = response
+                    .toDomainList()
+                    .applyFavorites(favoriteIds)
+
+                Result.Success(news)
+            } catch (t: Throwable) {
+                if (t is CancellationException) throw t
+                Result.Error(NetworkErrorMapper.fromThrowable(t).toDomain())
+            }
+        }
     }
 
     override suspend fun toggleFavorite(news: News): Result<Unit> {
         return withContext(ioDispatcher) {
             try {
+                val existing = newsDao.getNewsById(news.id)
+                if (existing == null) {
+                    newsDao.insert(news.toEntity())
+                }
                 newsDao.toggleFavorite(news.id)
                 Result.Success(Unit)
             } catch (t: Throwable) {
@@ -75,18 +96,14 @@ class NewsRepositoryImpl @Inject constructor(
 
         }
     }
+}
 
-    override suspend fun searchNews(query: String): Result<List<News>> {
-        return withContext(ioDispatcher) {
-            try {
-                val news = api.searchNews(query)
-                    .toDomainList()
+private suspend fun NewsDao.getFavoriteIdsSet(): Set<Long> {
+    return getFavoriteIds().toSet()
+}
 
-                Result.Success(news)
-            } catch (t: Throwable) {
-                if (t is CancellationException) throw t
-                Result.Error(NetworkErrorMapper.fromThrowable(t).toDomain())
-            }
-        }
+private fun List<News>.applyFavorites(favoriteIds: Set<Long>): List<News> {
+    return map { news ->
+        news.copy(isFavorite = news.id in favoriteIds)
     }
 }

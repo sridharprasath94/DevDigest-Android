@@ -6,13 +6,13 @@ import com.flash.devdigest.core.Result
 
 interface NewsRepository {
 
-    fun observeTrending(): Flow<List<News>>
+    fun observeTrendingNews(): Flow<List<News>>
 
-    fun observeFavorites(): Flow<List<News>>
-
-    suspend fun refreshTrendingNews() : Result<Unit>
-
-    suspend fun toggleFavorite(news: News) : Result<Unit>
+    suspend fun refreshTrendingNews(): Result<Unit>
 
     suspend fun searchNews(query: String): Result<List<News>>
+
+    suspend fun toggleFavorite(news: News): Result<Unit>
+
+    fun observeFavoriteNews(): Flow<List<News>>
 }

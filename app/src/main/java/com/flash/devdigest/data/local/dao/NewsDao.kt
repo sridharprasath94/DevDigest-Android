@@ -13,14 +13,26 @@ interface NewsDao {
     @Query("SELECT * FROM news ORDER BY points DESC")
     fun observeTrending(): Flow<List<NewsEntity>>
 
-    @Query("SELECT * FROM news WHERE isFavorite = 1")
-    fun observeFavorites(): Flow<List<NewsEntity>>
+    @Query("SELECT * FROM news WHERE id = :id LIMIT 1")
+    suspend fun getNewsById(id: Long): NewsEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllNews(news: List<NewsEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(repo: NewsEntity)
+
+    @Query("DELETE FROM news WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("DELETE FROM news")
+    suspend fun clearNews()
 
     @Query("SELECT id FROM news WHERE isFavorite = 1")
     suspend fun getFavoriteIds(): List<Long>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(news: List<NewsEntity>)
+    @Query("SELECT * FROM news WHERE isFavorite = 1")
+    fun observeFavorites(): Flow<List<NewsEntity>>
 
     @Query("UPDATE news SET isFavorite = NOT isFavorite WHERE id = :id")
     suspend fun toggleFavorite(id: Long)
