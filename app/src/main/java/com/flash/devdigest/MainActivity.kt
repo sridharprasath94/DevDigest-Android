@@ -1,17 +1,12 @@
 package com.flash.devdigest
 
 import android.os.Bundle
-import android.util.Log
-import com.google.android.material.snackbar.Snackbar
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.findNavController
+import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
-import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.flash.devdigest.databinding.ActivityMainBinding
 import dagger.hilt.android.AndroidEntryPoint
@@ -31,10 +26,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         setSupportActionBar(binding.toolbar)
 
         appBarConfiguration = AppBarConfiguration(
-            setOf(
-                R.id.trendingNewsFragment,
-                R.id.favoritesFragment
-            )
+            navController.graph
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         binding.bottomNav.setupWithNavController(navController)
