@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 import kotlin.getValue
 
 @AndroidEntryPoint
-class FavoriteReposFragment :
+class FavoriteNewsFragment :
     Fragment(R.layout.fragment_favorites) {
 
     private val binding: FragmentFavoritesBinding by viewBinding(FragmentFavoritesBinding::bind)
@@ -42,7 +42,7 @@ class FavoriteReposFragment :
 
         adapter.setOnItemClickListener { repo ->
             val action =
-                FavoriteReposFragmentDirections
+                FavoriteNewsFragmentDirections
                     .actionFavoritesToDetails(repo)
 
             findNavController().navigate(action)
@@ -54,7 +54,7 @@ class FavoriteReposFragment :
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
                     when {
-                        state.isLoading && state.repos.isEmpty() -> {
+                        state.isLoading && state.news.isEmpty() -> {
                             binding.fullScreenLoader.visibility = View.VISIBLE
                             adapter.submitList(emptyList())
                         }
@@ -67,7 +67,7 @@ class FavoriteReposFragment :
 
                         else -> {
                             binding.fullScreenLoader.visibility = View.GONE
-                            adapter.submitList(state.repos) {
+                            adapter.submitList(state.news) {
                                 binding.recyclerView.scrollToPosition(0)
                             }
                         }

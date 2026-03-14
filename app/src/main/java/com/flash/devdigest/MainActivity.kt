@@ -1,6 +1,7 @@
 package com.flash.devdigest
 
 import android.os.Bundle
+import android.util.Log
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
@@ -29,20 +30,19 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
         setSupportActionBar(binding.toolbar)
 
-        appBarConfiguration = AppBarConfiguration(navController.graph)
+        appBarConfiguration = AppBarConfiguration(
+            setOf(
+                R.id.trendingNewsFragment,
+                R.id.favoritesFragment
+            )
+        )
         setupActionBarWithNavController(navController, appBarConfiguration)
         binding.bottomNav.setupWithNavController(navController)
         navController.addOnDestinationChangedListener { _, destination, _ ->
-            when (destination.id) {
-                R.id.trendingFragment,
-                R.id.favoritesFragment -> {
-                    binding.bottomNav.visibility = View.VISIBLE
-                }
-
-                else -> {
-                    binding.bottomNav.visibility = View.VISIBLE
-                }
-            }
+            binding.bottomNav.visibility =
+                if (destination.id == R.id.trendingNewsFragment ||
+                    destination.id == R.id.favoritesFragment
+                ) View.VISIBLE else View.GONE
         }
     }
 

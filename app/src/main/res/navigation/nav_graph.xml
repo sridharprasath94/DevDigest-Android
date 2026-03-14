@@ -3,10 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/TrendingNewsFragment">
+    app:startDestination="@id/trendingNewsFragment">
 
     <fragment
-        android:id="@+id/TrendingNewsFragment"
+        android:id="@+id/trendingNewsFragment"
         android:name="com.flash.devdigest.presentation.trending.TrendingNewsFragment"
         android:label="@string/trending_fragment_label"
         tools:layout="@layout/fragment_trending_news">
@@ -18,8 +18,9 @@
 
     <fragment
         android:id="@+id/favoritesFragment"
-        android:name="com.flash.devdigest.presentation.favorites.FavoriteReposFragment">
-
+        android:name="com.flash.devdigest.presentation.favorites.FavoriteNewsFragment"
+        android:label="@string/favorites"
+        tools:layout="@layout/fragment_favorites">
         <action
             android:id="@+id/action_favorites_to_details"
             app:destination="@id/NewsDetailFragment" />
