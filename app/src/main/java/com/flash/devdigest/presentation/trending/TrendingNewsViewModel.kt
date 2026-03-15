@@ -2,30 +2,28 @@ package com.flash.devdigest.presentation.trending
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.flash.devdigest.domain.usecase.ObserveTrendingNewsUseCase
-import com.flash.devdigest.domain.usecase.RefreshTrendingNewsUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.combine
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.flash.devdigest.core.Result
 import com.flash.devdigest.domain.model.News
 import com.flash.devdigest.domain.usecase.ObservePagedTrendingNewsUseCase
+import com.flash.devdigest.domain.usecase.RefreshTrendingNewsUseCase
 import com.flash.devdigest.domain.usecase.SearchNewsUseCase
 import com.flash.devdigest.domain.usecase.ToggleFavoriteUseCase
 import com.flash.devdigest.presentation.error.UIError
-import androidx.paging.PagingData
-import androidx.paging.cachedIn
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 sealed class TrendingNewsIntent {
