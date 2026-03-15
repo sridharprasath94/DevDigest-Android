@@ -43,13 +43,6 @@ class NewsRepositoryImpl @Inject constructor(
 ) : NewsRepository {
     private val refreshMutex = Mutex()
 
-    override fun observeTrendingNews(): Flow<List<News>> {
-        return newsDao.observeTrending()
-            .map { entities ->
-                entities.map { it.toDomain() }
-            }
-    }
-
 
     @OptIn(ExperimentalPagingApi::class)
     override fun observePagedTrendingNews(): Flow<PagingData<News>> {

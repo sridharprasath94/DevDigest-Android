@@ -8,8 +8,6 @@ import com.flash.devdigest.core.Result
 interface NewsRepository {
     fun observePagedTrendingNews() : Flow<PagingData<News>>
 
-    fun observeTrendingNews(): Flow<List<News>>
-
     suspend fun refreshTrendingNews(): Result<Unit>
 
     suspend fun searchNews(query: String): Result<List<News>>

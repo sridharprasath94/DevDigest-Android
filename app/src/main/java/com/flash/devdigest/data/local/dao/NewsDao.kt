@@ -13,12 +13,12 @@ interface NewsDao {
     @Query(
         """
 SELECT * FROM news
-ORDER BY isFavorite DESC, points DESC
+ORDER BY isFavorite DESC, createdAt DESC
 """
     )
     fun pagingSource(): PagingSource<Int, NewsEntity>
 
-    @Query("SELECT * FROM news ORDER BY points DESC")
+    @Query("SELECT * FROM news ORDER BY createdAt DESC")
     fun observeTrending(): Flow<List<NewsEntity>>
 
     @Query("SELECT * FROM news WHERE id = :id LIMIT 1")
