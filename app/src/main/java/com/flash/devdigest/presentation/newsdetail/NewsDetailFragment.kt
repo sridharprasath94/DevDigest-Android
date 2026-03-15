@@ -14,7 +14,6 @@ import dev.androidbroadcast.vbpd.viewBinding
 @AndroidEntryPoint
 class NewsDetailFragment : Fragment(R.layout.fragment_news_detail) {
     private val binding: FragmentNewsDetailBinding by viewBinding(FragmentNewsDetailBinding::bind)
-
     private val args: NewsDetailFragmentArgs by navArgs()
 
 
