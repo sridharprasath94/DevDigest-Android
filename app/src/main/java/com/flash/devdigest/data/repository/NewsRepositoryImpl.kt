@@ -4,6 +4,7 @@ import com.flash.devdigest.core.Result
 import com.flash.devdigest.data.error.NetworkErrorMapper
 import com.flash.devdigest.data.error.NetworkErrorMapper.toDomain
 import com.flash.devdigest.data.local.dao.NewsDao
+import com.flash.devdigest.data.local.entity.NewsEntity
 import com.flash.devdigest.data.local.mapper.toDomain
 import com.flash.devdigest.data.local.mapper.toEntity
 import com.flash.devdigest.data.remote.api.NewsApi
@@ -13,11 +14,13 @@ import com.flash.devdigest.domain.model.News
 import com.flash.devdigest.domain.repository.NewsRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
+import kotlin.collections.map
 import kotlin.coroutines.cancellation.CancellationException
 
 class NewsRepositoryImpl @Inject constructor(
@@ -47,6 +50,8 @@ class NewsRepositoryImpl @Inject constructor(
                 try {
                     val response: NewsResponseDto = api.getFrontPage()
                     val favoriteIds = newsDao.getFavoriteIdsSet()
+                    val favoriteNews = newsDao.observeFavoriteNewsOnce()
+
                     val entities = response
                         .toDomainList()
                         .applyFavorites(favoriteIds)
@@ -54,6 +59,13 @@ class NewsRepositoryImpl @Inject constructor(
 
                     newsDao.clearNews()
                     newsDao.insertAllNews(entities)
+
+                    // Re‑insert favorite news that are not part of the trending list
+                    favoriteNews
+                        .filter { fav -> entities.none { it.id == fav.id } }
+                        .map { it.toDomain().toEntity() }
+                        .let {  newsDao.insertAllNews(it) }
+
                     Result.Success(Unit)
                 } catch (t: Throwable) {
                     if (t is CancellationException) throw t
@@ -106,4 +118,8 @@ private fun List<News>.applyFavorites(favoriteIds: Set<Long>): List<News> {
     return map { news ->
         news.copy(isFavorite = news.id in favoriteIds)
     }
+}
+
+private suspend fun NewsDao.observeFavoriteNewsOnce(): List<NewsEntity> {
+    return observeFavorites().first()
 }

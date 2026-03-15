@@ -20,7 +20,7 @@ interface NewsDao {
     suspend fun insertAllNews(news: List<NewsEntity>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(repo: NewsEntity)
+    suspend fun insert(news: NewsEntity)
 
     @Query("DELETE FROM news WHERE id = :id")
     suspend fun delete(id: Long)
