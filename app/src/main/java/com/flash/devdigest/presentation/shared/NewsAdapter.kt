@@ -4,7 +4,6 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.flash.devdigest.R
 import com.flash.devdigest.databinding.RowNewsBinding
@@ -73,7 +72,7 @@ class NewsAdapter(private val enableFavoritesIcon: Boolean = true) :
 
 
         private fun formatDate(date: String): String {
-            val instant = Instant.Companion.parse(date)
+            val instant = Instant.parse(date)
             val now = Clock.System.now()
             val duration = now - instant
 
