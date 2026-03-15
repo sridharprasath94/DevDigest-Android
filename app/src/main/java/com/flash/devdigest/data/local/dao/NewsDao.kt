@@ -18,6 +18,9 @@ ORDER BY isFavorite DESC, createdAt DESC
     )
     fun pagingSource(): PagingSource<Int, NewsEntity>
 
+    @Query("SELECT COUNT(*) FROM news")
+    suspend fun getCount(): Int
+
     @Query("SELECT * FROM news ORDER BY createdAt DESC")
     fun observeTrending(): Flow<List<NewsEntity>>
 
