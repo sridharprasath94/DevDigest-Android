@@ -2,6 +2,7 @@ package com.flash.devdigest.presentation.shared
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -12,7 +13,7 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 class NewsAdapter(private val enableFavoritesIcon: Boolean = true) :
-    ListAdapter<News, NewsAdapter.NewsViewHolder>(DiffCallback) {
+    PagingDataAdapter<News, NewsAdapter.NewsViewHolder>(DiffCallback) {
 
     private var onItemClick: ((News) -> Unit)? = null
     private var onFavoriteClick: ((News) -> Unit)? = null
@@ -102,7 +103,8 @@ class NewsAdapter(private val enableFavoritesIcon: Boolean = true) :
     }
 
     override fun onBindViewHolder(holder: NewsViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        val news = getItem(position) ?: return
+        holder.bind(news)
     }
 
 

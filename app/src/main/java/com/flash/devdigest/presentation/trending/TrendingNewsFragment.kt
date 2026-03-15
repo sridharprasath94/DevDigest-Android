@@ -16,6 +16,7 @@ import com.flash.devdigest.databinding.FragmentTrendingNewsBinding
 import com.flash.devdigest.presentation.shared.NewsAdapter
 import dagger.hilt.android.AndroidEntryPoint
 import dev.androidbroadcast.vbpd.viewBinding
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -69,19 +70,19 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.pagedNews.collectLatest { pagingData ->
+                    binding.fullScreenLoader.visibility = View.GONE
+                    adapter.submitData(pagingData)
+                    binding.swipeRefresh.isRefreshing = false
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
-                    binding.swipeRefresh.isRefreshing = state.isLoading
-                    when {
-                        state.isLoading && state.news.isEmpty() -> {
-                            binding.fullScreenLoader.visibility = View.VISIBLE
-                        }
-
-                        else -> {
-                            binding.fullScreenLoader.visibility = View.GONE
-
-                            adapter.submitList(state.news)
-                        }
-                    }
+                    binding.fullScreenLoader.visibility =
+                        if (state.isLoading) View.VISIBLE else View.GONE
                 }
             }
         }

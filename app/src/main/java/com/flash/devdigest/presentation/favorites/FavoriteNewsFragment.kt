@@ -8,6 +8,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.paging.PagingData
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.flash.devdigest.R
 import com.flash.devdigest.databinding.FragmentFavoritesBinding
@@ -58,7 +59,7 @@ class FavoriteNewsFragment :
 
                         else -> {
                             binding.fullScreenLoader.visibility = View.GONE
-                            adapter.submitList(state.news)
+                            adapter.submitData(PagingData.from(state.news))
                         }
                     }
                 }

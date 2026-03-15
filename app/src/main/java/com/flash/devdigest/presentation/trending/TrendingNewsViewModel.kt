@@ -13,10 +13,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.combine
 import com.flash.devdigest.core.Result
 import com.flash.devdigest.domain.model.News
+import com.flash.devdigest.domain.usecase.ObservePagedTrendingNewsUseCase
 import com.flash.devdigest.domain.usecase.SearchNewsUseCase
 import com.flash.devdigest.domain.usecase.ToggleFavoriteUseCase
 import com.flash.devdigest.presentation.error.UIError
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -36,7 +40,7 @@ sealed class TrendingNewsIntent {
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class TrendingNewsViewModel @Inject constructor(
-    private val observeTrendingNewsUseCase: ObserveTrendingNewsUseCase,
+    observePagedTrendingNewsUseCase: ObservePagedTrendingNewsUseCase,
     private val refreshTrendingNewsUseCase: RefreshTrendingNewsUseCase,
     private val searchNewsUseCase: SearchNewsUseCase,
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase
@@ -52,6 +56,10 @@ class TrendingNewsViewModel @Inject constructor(
 
     private val _searchResults =
         MutableStateFlow<List<News>?>(null)
+
+    val pagedNews: Flow<PagingData<News>> =
+        observePagedTrendingNewsUseCase()
+            .cachedIn(viewModelScope)
 
     init {
         observeNews()
@@ -78,16 +86,11 @@ class TrendingNewsViewModel @Inject constructor(
 
     private fun observeNews() {
         viewModelScope.launch {
-            combine(
-                observeTrendingNewsUseCase(),
-                _searchResults
-            ) { news, searchResults ->
-                searchResults ?: news
-            }.collect { list ->
+            _searchResults.collect { results ->
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        news = list,
+                        news = results ?: emptyList()
                     )
                 }
             }
@@ -110,10 +113,11 @@ class TrendingNewsViewModel @Inject constructor(
     }
 
     private fun refresh() {
+        _state.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             when (val result = refreshTrendingNewsUseCase()) {
                 is Result.Success -> {
-                    _state.update { it.copy(isLoading = true) }
+                    _state.update { it.copy(isLoading = false) }
                 }
 
                 is Result.Error -> {

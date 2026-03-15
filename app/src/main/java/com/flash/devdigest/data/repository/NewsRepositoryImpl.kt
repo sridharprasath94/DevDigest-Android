@@ -1,8 +1,20 @@
 package com.flash.devdigest.data.repository
 
+import android.util.Log
+import androidx.paging.ExperimentalPagingApi
+import androidx.paging.LoadType
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.PagingState
+import androidx.paging.RemoteMediator
+import androidx.paging.map
+import androidx.room.RoomDatabase
+import androidx.room.withTransaction
 import com.flash.devdigest.core.Result
 import com.flash.devdigest.data.error.NetworkErrorMapper
 import com.flash.devdigest.data.error.NetworkErrorMapper.toDomain
+import com.flash.devdigest.data.local.AppDatabase
 import com.flash.devdigest.data.local.dao.NewsDao
 import com.flash.devdigest.data.local.entity.NewsEntity
 import com.flash.devdigest.data.local.mapper.toDomain
@@ -24,6 +36,7 @@ import kotlin.collections.map
 import kotlin.coroutines.cancellation.CancellationException
 
 class NewsRepositoryImpl @Inject constructor(
+    private val database: AppDatabase,
     private val api: NewsApi,
     private val newsDao: NewsDao,
     private val ioDispatcher: CoroutineDispatcher
@@ -35,6 +48,26 @@ class NewsRepositoryImpl @Inject constructor(
             .map { entities ->
                 entities.map { it.toDomain() }
             }
+    }
+
+
+    @OptIn(ExperimentalPagingApi::class)
+    override fun observePagedTrendingNews(): Flow<PagingData<News>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 30,
+                prefetchDistance = 10,
+                enablePlaceholders = false
+            ),
+            remoteMediator = NewsRemoteMediator(
+                api = api,
+                newsDao = newsDao,
+                database = database
+            ),
+            pagingSourceFactory = { newsDao.pagingSource() }
+        ).flow.map { pagingData ->
+            pagingData.map { it.toDomain() }
+        }
     }
 
     override fun observeFavoriteNews(): Flow<List<News>> {
@@ -64,7 +97,7 @@ class NewsRepositoryImpl @Inject constructor(
                     favoriteNews
                         .filter { fav -> entities.none { it.id == fav.id } }
                         .map { it.toDomain().toEntity() }
-                        .let {  newsDao.insertAllNews(it) }
+                        .let { newsDao.insertAllNews(it) }
 
                     Result.Success(Unit)
                 } catch (t: Throwable) {
@@ -122,4 +155,69 @@ private fun List<News>.applyFavorites(favoriteIds: Set<Long>): List<News> {
 
 private suspend fun NewsDao.observeFavoriteNewsOnce(): List<NewsEntity> {
     return observeFavorites().first()
+}
+
+
+@OptIn(ExperimentalPagingApi::class)
+class NewsRemoteMediator(
+    private val api: NewsApi,
+    private val newsDao: NewsDao,
+    private val database: RoomDatabase
+) : RemoteMediator<Int, NewsEntity>() {
+
+    override suspend fun load(
+        loadType: LoadType,
+        state: PagingState<Int, NewsEntity>
+    ): MediatorResult {
+
+        val page = when (loadType) {
+            LoadType.REFRESH -> 1
+            LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
+            LoadType.APPEND -> {
+
+                val lastItem = state.lastItemOrNull()
+                    ?: return MediatorResult.Success(endOfPaginationReached = true)
+
+                val nextPage = (state.pages.sumOf { it.data.size } / state.config.pageSize) + 1
+                nextPage
+            }
+        }
+
+        return try {
+            Log.d("NewsAdapter", "Page: ${page}, Page count ${state.pages.size}")
+            val response = api.getFrontPage(page = page, hitsPerPage = state.config.pageSize)
+
+            // Preserve existing favorites before refresh
+            val favoriteIds = newsDao.getFavoriteIdsSet()
+            val favoriteRepos = newsDao.observeFavoriteNewsOnce()
+
+            database.withTransaction {
+
+                if (loadType == LoadType.REFRESH) {
+                    newsDao.clearNews()
+                }
+
+                val entities = response
+                    .toDomainList()
+                    .applyFavorites(favoriteIds)
+                    .map { it.toEntity() }
+
+                newsDao.insertAllNews(entities)
+
+                // Only restore favorites during REFRESH to avoid invalidating Paging repeatedly
+                if (loadType == LoadType.REFRESH) {
+                    favoriteRepos
+                        .filter { fav -> entities.none { it.id == fav.id } }
+                        .let { newsDao.insertAllNews(it) }
+                }
+            }
+
+            MediatorResult.Success(
+                endOfPaginationReached = response.toDomainList().isEmpty()
+            )
+
+        } catch (t: Throwable) {
+            MediatorResult.Error(t)
+        }
+    }
 }
