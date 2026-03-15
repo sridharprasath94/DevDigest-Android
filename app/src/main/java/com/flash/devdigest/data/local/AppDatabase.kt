@@ -8,7 +8,7 @@ import com.flash.devdigest.data.local.entity.NewsEntity
 @Database(
     entities = [NewsEntity::class],
     version = 1,
-    exportSchema = true
+    exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun newsDao(): NewsDao
