@@ -2,16 +2,14 @@ package com.flash.devdigest.presentation.newsdetail
 
 import android.os.Bundle
 import android.view.View
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
-import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
 import com.flash.devdigest.R
 import com.flash.devdigest.databinding.FragmentNewsDetailBinding
 import dagger.hilt.android.AndroidEntryPoint
 import dev.androidbroadcast.vbpd.viewBinding
-
-import androidx.navigation.fragment.navArgs
-import androidx.browser.customtabs.CustomTabsIntent
-import androidx.core.net.toUri
 
 @AndroidEntryPoint
 class NewsDetailFragment : Fragment(R.layout.fragment_news_detail) {
