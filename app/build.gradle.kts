@@ -46,44 +46,70 @@ android {
 }
 
 dependencies {
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
+    // Core
+
+    // UI
     implementation(libs.material)
+    implementation(libs.androidx.browser)
+    implementation(libs.androidx.swiperefreshlayout)
+
+    // Compose
     implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.google.fonts)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.compose.material3)
+
+    // Navigation
     implementation(libs.android.navigation.fragment)
     implementation(libs.android.navigation.ui)
-    implementation(libs.androidx.browser)
+
+    // Dependency Injection
     implementation(libs.hilt.android)
-    implementation(libs.androidx.recyclerview)
-    implementation(libs.androidx.hilt.navigation.compose)
-    implementation(libs.androidx.swiperefreshlayout)
-    implementation(libs.coil)
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    implementation(libs.androidx.junit.ktx)
     ksp(libs.hilt.compiler)
-    ksp(libs.room.compiler)
-    // Retrofit + OkHttp
+
+    // Data - Network
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
+
+    // Data - Database
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
+
+    // Core - Paging
+    implementation(libs.androidx.paging.runtime)
+    implementation(libs.androidx.room.paging)
+
+    // Utilities
     implementation(libs.dev.android.broadcast.vbpd)
     implementation(libs.dev.android.broadcast.vbpd.reflection)
+
+    // Testing
+    implementation(libs.androidx.junit.ktx)
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(libs.room.testing)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+
+    // Debug
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+
+    // Unused / Optional dependencies (kept for reference)
+    //    implementation(libs.androidx.core.ktx)
+    //    implementation(libs.androidx.lifecycle.runtime.ktx)
+    //    implementation(libs.androidx.activity.compose)
+    //    implementation(libs.androidx.google.fonts)
+    //    implementation(libs.androidx.appcompat)
+    //    implementation(libs.androidx.compose.ui)
+    //    implementation(libs.androidx.compose.ui.graphics)
+    //    implementation(libs.androidx.compose.ui.tooling.preview)
+    //    implementation(libs.androidx.compose.material3)
+    //    implementation(libs.androidx.recyclerview)
+    //    implementation(libs.androidx.hilt.navigation.compose)
+    //    implementation(libs.coil)
+
+    //    androidTestImplementation(libs.androidx.junit)
+    //    androidTestImplementation(libs.androidx.espresso.core)
+    //    androidTestImplementation(libs.room.testing)
+    //    androidTestImplementation(platform(libs.androidx.compose.bom))
+    //    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }

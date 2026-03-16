@@ -1,9 +1,12 @@
 package com.flash.devdigest.presentation.shared
 
+import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
 import com.flash.devdigest.R
 import com.flash.devdigest.databinding.RowNewsBinding
@@ -12,7 +15,7 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 class NewsAdapter(private val enableFavoritesIcon: Boolean = true) :
-    ListAdapter<News, NewsAdapter.NewsViewHolder>(DiffCallback) {
+    PagingDataAdapter<News, NewsAdapter.NewsViewHolder>(DiffCallback) {
 
     private var onItemClick: ((News) -> Unit)? = null
     private var onFavoriteClick: ((News) -> Unit)? = null
@@ -23,7 +26,6 @@ class NewsAdapter(private val enableFavoritesIcon: Boolean = true) :
         private val onFavoriteClick: ((News) -> Unit)?,
         private val enableFavoritesIcon: Boolean
     ) : RecyclerView.ViewHolder(binding.root) {
-
 
         fun bind(news: News) {
             binding.newsTitle.text = news.title
@@ -72,7 +74,7 @@ class NewsAdapter(private val enableFavoritesIcon: Boolean = true) :
 
 
         private fun formatDate(date: String): String {
-            val instant = Instant.Companion.parse(date)
+            val instant = Instant.parse(date)
             val now = Clock.System.now()
             val duration = now - instant
 
@@ -102,7 +104,8 @@ class NewsAdapter(private val enableFavoritesIcon: Boolean = true) :
     }
 
     override fun onBindViewHolder(holder: NewsViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        val news = getItem(position) ?: return
+        holder.bind(news)
     }
 
 
@@ -115,5 +118,4 @@ class NewsAdapter(private val enableFavoritesIcon: Boolean = true) :
             return oldItem == newItem
         }
     }
-
 }

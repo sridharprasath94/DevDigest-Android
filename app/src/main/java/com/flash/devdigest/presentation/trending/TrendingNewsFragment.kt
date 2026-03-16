@@ -3,6 +3,7 @@ package com.flash.devdigest.presentation.trending
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -14,8 +15,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.flash.devdigest.R
 import com.flash.devdigest.databinding.FragmentTrendingNewsBinding
 import com.flash.devdigest.presentation.shared.NewsAdapter
+import com.flash.devdigest.presentation.utils.fastSmoothScrollToTop
 import dagger.hilt.android.AndroidEntryPoint
 import dev.androidbroadcast.vbpd.viewBinding
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -30,6 +33,22 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
         observeState()
         observeEvents()
         observeSearchField()
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    val layoutManager = binding.recyclerView.layoutManager as LinearLayoutManager
+                    val firstVisible = layoutManager.findFirstVisibleItemPosition()
+
+                    if (firstVisible > 0) {
+                        binding.recyclerView.fastSmoothScrollToTop()
+                    } else {
+                        isEnabled = false
+                        requireActivity().onBackPressedDispatcher.onBackPressed()
+                    }
+                }
+            }
+        )
     }
 
     private fun observeSearchField() {
@@ -50,7 +69,7 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
         binding.recyclerView.adapter = adapter
 
         binding.swipeRefresh.setOnRefreshListener {
-            viewModel.processIntent(TrendingNewsIntent.Refresh)
+            adapter.refresh()
         }
 
         adapter.setOnItemClickListener { news ->
@@ -69,19 +88,19 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.pagedNews.collectLatest { pagingData ->
+                    binding.fullScreenLoader.visibility = View.GONE
+                    adapter.submitData(pagingData)
+                    binding.swipeRefresh.isRefreshing = false
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
-                    binding.swipeRefresh.isRefreshing = state.isLoading
-                    when {
-                        state.isLoading && state.news.isEmpty() -> {
-                            binding.fullScreenLoader.visibility = View.VISIBLE
-                        }
-
-                        else -> {
-                            binding.fullScreenLoader.visibility = View.GONE
-
-                            adapter.submitList(state.news)
-                        }
-                    }
+                    binding.fullScreenLoader.visibility =
+                        if (state.isLoading) View.VISIBLE else View.GONE
                 }
             }
         }
