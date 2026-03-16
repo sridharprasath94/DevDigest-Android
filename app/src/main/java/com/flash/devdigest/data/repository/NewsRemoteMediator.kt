@@ -5,7 +5,6 @@ import androidx.paging.ExperimentalPagingApi
 import androidx.paging.LoadType
 import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
-import androidx.recyclerview.widget.RecyclerView
 import androidx.room.withTransaction
 import com.flash.devdigest.data.local.AppDatabase
 import com.flash.devdigest.data.local.dao.NewsDao

@@ -23,10 +23,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
-import kotlin.collections.map
 import kotlin.coroutines.cancellation.CancellationException
 
 class NewsRepositoryImpl @Inject constructor(
@@ -35,17 +32,15 @@ class NewsRepositoryImpl @Inject constructor(
     private val newsDao: NewsDao,
     private val ioDispatcher: CoroutineDispatcher
 ) : NewsRepository {
-    private val refreshMutex = Mutex()
-
-
     @OptIn(ExperimentalPagingApi::class)
     override fun observePagedTrendingNews(): Flow<PagingData<News>> {
         return Pager(
             config = PagingConfig(
                 pageSize = 20,
                 initialLoadSize = 20,
-                prefetchDistance = 3,
+                prefetchDistance = 2,
                 enablePlaceholders = false,
+                maxSize = PagingConfig.MAX_SIZE_UNBOUNDED
             ),
             remoteMediator = NewsRemoteMediator(
                 api = api,
@@ -63,37 +58,6 @@ class NewsRepositoryImpl @Inject constructor(
             .map { entities ->
                 entities.map { it.toDomain() }
             }
-    }
-
-    override suspend fun refreshTrendingNews(): Result<Unit> {
-        return withContext(ioDispatcher) {
-            refreshMutex.withLock {
-                try {
-                    val response: NewsResponseDto = api.getFrontPage()
-                    val favoriteIds = newsDao.getFavoriteIdsSet()
-                    val favoriteNews = newsDao.observeFavoriteNewsOnce()
-
-                    val entities = response
-                        .toDomainList()
-                        .applyFavorites(favoriteIds)
-                        .map { it.toEntity() }
-
-                    newsDao.clearNews()
-                    newsDao.insertAllNews(entities)
-
-                    // Re‑insert favorite news that are not part of the trending list
-                    favoriteNews
-                        .filter { fav -> entities.none { it.id == fav.id } }
-                        .map { it.toDomain().toEntity() }
-                        .let { newsDao.insertAllNews(it) }
-
-                    Result.Success(Unit)
-                } catch (t: Throwable) {
-                    if (t is CancellationException) throw t
-                    Result.Error(NetworkErrorMapper.fromThrowable(t).toDomain())
-                }
-            }
-        }
     }
 
     override suspend fun searchNews(query: String): Result<List<News>> {
