@@ -1,9 +1,12 @@
 package com.flash.devdigest.presentation.shared
 
+import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
 import com.flash.devdigest.R
 import com.flash.devdigest.databinding.RowNewsBinding
@@ -23,7 +26,6 @@ class NewsAdapter(private val enableFavoritesIcon: Boolean = true) :
         private val onFavoriteClick: ((News) -> Unit)?,
         private val enableFavoritesIcon: Boolean
     ) : RecyclerView.ViewHolder(binding.root) {
-
 
         fun bind(news: News) {
             binding.newsTitle.text = news.title
@@ -116,5 +118,4 @@ class NewsAdapter(private val enableFavoritesIcon: Boolean = true) :
             return oldItem == newItem
         }
     }
-
 }

@@ -3,7 +3,7 @@ package com.flash.devdigest.presentation.trending
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
-import androidx.compose.runtime.collectAsState
+import androidx.activity.OnBackPressedCallback
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.flash.devdigest.R
 import com.flash.devdigest.databinding.FragmentTrendingNewsBinding
 import com.flash.devdigest.presentation.shared.NewsAdapter
+import com.flash.devdigest.presentation.utils.fastSmoothScrollToTop
 import dagger.hilt.android.AndroidEntryPoint
 import dev.androidbroadcast.vbpd.viewBinding
 import kotlinx.coroutines.flow.collectLatest
@@ -32,6 +33,22 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
         observeState()
         observeEvents()
         observeSearchField()
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    val layoutManager = binding.recyclerView.layoutManager as LinearLayoutManager
+                    val firstVisible = layoutManager.findFirstVisibleItemPosition()
+
+                    if (firstVisible > 0) {
+                        binding.recyclerView.fastSmoothScrollToTop()
+                    } else {
+                        isEnabled = false
+                        requireActivity().onBackPressedDispatcher.onBackPressed()
+                    }
+                }
+            }
+        )
     }
 
     private fun observeSearchField() {
