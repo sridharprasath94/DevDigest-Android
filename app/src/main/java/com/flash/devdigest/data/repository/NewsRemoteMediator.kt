@@ -5,6 +5,7 @@ import androidx.paging.ExperimentalPagingApi
 import androidx.paging.LoadType
 import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
+import androidx.recyclerview.widget.RecyclerView
 import androidx.room.withTransaction
 import com.flash.devdigest.data.local.AppDatabase
 import com.flash.devdigest.data.local.dao.NewsDao
@@ -20,6 +21,11 @@ class NewsRemoteMediator(
     private val database: AppDatabase
 ) : RemoteMediator<Int, NewsEntity>() {
 
+    override suspend fun initialize(): InitializeAction {
+        return InitializeAction.LAUNCH_INITIAL_REFRESH
+    }
+
+
     private var currentPage: Int = 0
 
     override suspend fun load(
@@ -34,17 +40,20 @@ class NewsRemoteMediator(
             }
 
             LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
+
             LoadType.APPEND -> {
-                currentPage += 1
-                currentPage
+                val next = currentPage + 1
+                currentPage = next
+                next
             }
         }
+        Log.d("NewsPaging", "LoadType=$loadType | page=$page | mediatorPage=$currentPage")
 
         return try {
             val response = api.getLatestStories(page = page)
             Log.d(
-                "NewsAdapter",
-                "Page: ${page}, Hits count ${state.config.pageSize} Hits size ${response.hits.size}"
+                "NewsPaging",
+                "Page: $page | hits=${response.hits.size} | nbPages=${response.nbPages}"
             )
             // Preserve existing favorites before refresh
             val favoriteIds = newsDao.getFavoriteIdsSet()
@@ -71,8 +80,13 @@ class NewsRemoteMediator(
                 }
             }
 
+            val endReached = page >= response.nbPages - 1
+            Log.d(
+                "NewsPaging",
+                "EndReached=$endReached | nextPage=${if (endReached) "none" else page + 1}"
+            )
             MediatorResult.Success(
-                endOfPaginationReached = response.hits.isEmpty()
+                endOfPaginationReached = endReached
             )
 
         } catch (t: Throwable) {

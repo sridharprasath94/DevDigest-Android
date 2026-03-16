@@ -27,7 +27,7 @@ ORDER BY isFavorite DESC, createdAt DESC
     @Query("SELECT * FROM news WHERE id = :id LIMIT 1")
     suspend fun getNewsById(id: Long): NewsEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAllNews(news: List<NewsEntity>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
