@@ -7,7 +7,6 @@ import androidx.paging.cachedIn
 import com.flash.devdigest.core.Result
 import com.flash.devdigest.domain.model.News
 import com.flash.devdigest.domain.usecase.ObservePagedTrendingNewsUseCase
-import com.flash.devdigest.domain.usecase.RefreshTrendingNewsUseCase
 import com.flash.devdigest.domain.usecase.SearchNewsUseCase
 import com.flash.devdigest.domain.usecase.ToggleFavoriteUseCase
 import com.flash.devdigest.presentation.error.UIError
@@ -27,8 +26,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 sealed class TrendingNewsIntent {
-    object Load : TrendingNewsIntent()
-    object Refresh : TrendingNewsIntent()
     data class Search(val query: String) : TrendingNewsIntent()
     data class OnSearchQueryChanged(val query: String) : TrendingNewsIntent()
     data class ToggleFavorite(val news: News) : TrendingNewsIntent()
@@ -39,7 +36,6 @@ sealed class TrendingNewsIntent {
 @HiltViewModel
 class TrendingNewsViewModel @Inject constructor(
     observePagedTrendingNewsUseCase: ObservePagedTrendingNewsUseCase,
-    private val refreshTrendingNewsUseCase: RefreshTrendingNewsUseCase,
     private val searchNewsUseCase: SearchNewsUseCase,
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase
 ) : ViewModel() {
@@ -62,14 +58,10 @@ class TrendingNewsViewModel @Inject constructor(
     init {
         observeNews()
         observeSearchQuery()
-        processIntent(TrendingNewsIntent.Load)
     }
 
     fun processIntent(intent: TrendingNewsIntent) {
         when (intent) {
-            TrendingNewsIntent.Load -> refresh()
-            TrendingNewsIntent.Refresh -> refresh()
-
             is TrendingNewsIntent.Search -> performSearch(intent.query)
 
             is TrendingNewsIntent.OnSearchQueryChanged -> searchQuery.value = intent.query
@@ -110,25 +102,7 @@ class TrendingNewsViewModel @Inject constructor(
         }
     }
 
-    private fun refresh() {
-        _state.update { it.copy(isLoading = true) }
-        viewModelScope.launch {
-            when (val result = refreshTrendingNewsUseCase()) {
-                is Result.Success -> {
-                    _state.update { it.copy(isLoading = false) }
-                }
 
-                is Result.Error -> {
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                        )
-                    }
-                    _events.emit(UIError.from(result.error))
-                }
-            }
-        }
-    }
 
     private fun performSearch(query: String) {
         if (query.isBlank()) {

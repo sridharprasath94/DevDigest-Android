@@ -3,6 +3,7 @@ package com.flash.devdigest.presentation.trending
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.compose.runtime.collectAsState
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -51,7 +52,7 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
         binding.recyclerView.adapter = adapter
 
         binding.swipeRefresh.setOnRefreshListener {
-            viewModel.processIntent(TrendingNewsIntent.Refresh)
+            adapter.refresh()
         }
 
         adapter.setOnItemClickListener { news ->
