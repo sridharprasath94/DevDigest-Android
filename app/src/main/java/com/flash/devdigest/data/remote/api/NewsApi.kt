@@ -10,7 +10,12 @@ interface NewsApi {
     suspend fun getFrontPage(
         @Query("tags") tags: String = "front_page",
         @Query("page") page: Int = 0,
-        @Query("hitsPerPage") hitsPerPage: Int = 30
+    ): NewsResponseDto
+
+    @GET("search_by_date")
+    suspend fun getLatestStories(
+        @Query("tags") tags: String = "story",
+        @Query("page") page: Int = 0
     ): NewsResponseDto
 
     @GET("search")
@@ -18,6 +23,5 @@ interface NewsApi {
         @Query("query") query: String,
         @Query("tags") tags: String = "story",
         @Query("page") page: Int = 0,
-        @Query("hitsPerPage") hitsPerPage: Int = 30
     ): NewsResponseDto
 }

@@ -27,6 +27,6 @@ object DatabaseModule {
         ).build()
 
     @Provides
-    fun provideRepoDao(db: AppDatabase): NewsDao =
+    fun provideNewsDao(db: AppDatabase): NewsDao =
         db.newsDao()
 }

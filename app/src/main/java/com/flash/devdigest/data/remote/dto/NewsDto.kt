@@ -4,7 +4,9 @@ import com.flash.devdigest.domain.model.News
 import com.google.gson.annotations.SerializedName
 
 data class NewsResponseDto(
-    val hits: List<NewsDto>
+    val hits: List<NewsDto>,
+    val nbHits: Int,
+    val nbPages: Int
 )
 
 data class NewsDto(
