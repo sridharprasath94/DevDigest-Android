@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.map
 import com.flash.devdigest.core.Result
 import com.flash.devdigest.domain.model.News
 import com.flash.devdigest.domain.usecase.ObservePagedTrendingNewsUseCase
@@ -12,6 +13,7 @@ import com.flash.devdigest.domain.usecase.ToggleFavoriteUseCase
 import com.flash.devdigest.presentation.error.UIError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
@@ -43,20 +46,27 @@ class TrendingNewsViewModel @Inject constructor(
     private val _state = MutableStateFlow(TrendingNewsState())
     val state: StateFlow<TrendingNewsState> = _state.asStateFlow()
 
-    private val searchQuery = MutableStateFlow("")
+    private val _searchQuery = MutableStateFlow("")
 
     private val _events = MutableSharedFlow<UIError>()
     val events = _events.asSharedFlow()
 
-    private val _searchResults =
-        MutableStateFlow<List<News>?>(null)
+    private val _searchResults = MutableStateFlow<PagingData<News>?>(null)
 
-    val pagedNews: Flow<PagingData<News>> =
+    private val _pagedNews: Flow<PagingData<News>> =
         observePagedTrendingNewsUseCase()
             .cachedIn(viewModelScope)
 
+    val newsFlow: Flow<PagingData<News>> =
+        combine(
+            _pagedNews,
+            _searchResults
+        ) { paging, search ->
+            search ?: paging
+        }
+    private var searchJob: Job? = null
+
     init {
-        observeNews()
         observeSearchQuery()
     }
 
@@ -64,7 +74,7 @@ class TrendingNewsViewModel @Inject constructor(
         when (intent) {
             is TrendingNewsIntent.Search -> performSearch(intent.query)
 
-            is TrendingNewsIntent.OnSearchQueryChanged -> searchQuery.value = intent.query
+            is TrendingNewsIntent.OnSearchQueryChanged -> _searchQuery.value = intent.query
 
             TrendingNewsIntent.ClearSearch -> {
                 _searchResults.value = null
@@ -74,22 +84,10 @@ class TrendingNewsViewModel @Inject constructor(
         }
     }
 
-    private fun observeNews() {
-        viewModelScope.launch {
-            _searchResults.collect { results ->
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        news = results ?: emptyList()
-                    )
-                }
-            }
-        }
-    }
 
     private fun observeSearchQuery() {
         viewModelScope.launch {
-            searchQuery
+            _searchQuery
                 .debounce(400)
                 .distinctUntilChanged()
                 .collectLatest { query ->
@@ -102,32 +100,23 @@ class TrendingNewsViewModel @Inject constructor(
         }
     }
 
-
-
     private fun performSearch(query: String) {
         if (query.isBlank()) {
             _searchResults.value = null
             return
         }
 
-        viewModelScope.launch {
+        searchJob?.cancel()
+
+        searchJob = viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
 
-            when (val result = searchNewsUseCase(query)) {
-                is Result.Success -> {
-                    _searchResults.value = result.data
+            searchNewsUseCase(query)
+                .cachedIn(viewModelScope)
+                .collectLatest { pagingData ->
+                    _searchResults.value = pagingData
                     _state.update { it.copy(isLoading = false) }
                 }
-
-                is Result.Error -> {
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                        )
-                    }
-                    _events.emit(UIError.from(result.error))
-                }
-            }
         }
     }
 

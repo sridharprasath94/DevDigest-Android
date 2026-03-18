@@ -75,9 +75,7 @@ class NewsRepositoryImpl @Inject constructor(
                     newsDao = newsDao
                 )
             }
-        ).flow.map { pagingData ->
-            pagingData.map { it }
-        }
+        ).flow
     }
 
     override suspend fun toggleFavorite(news: News): Result<Unit> {
