@@ -99,8 +99,12 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
-                    binding.fullScreenLoader.visibility =
-                        if (state.isLoading) View.VISIBLE else View.GONE
+                    when (state) {
+                        TrendingNewsState.Loading -> binding.fullScreenLoader.visibility =
+                            View.VISIBLE
+
+                        TrendingNewsState.Idle -> binding.fullScreenLoader.visibility = View.GONE
+                    }
                 }
             }
         }

@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -40,7 +39,7 @@ class TrendingNewsViewModel @Inject constructor(
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(TrendingNewsState())
+    private val _state = MutableStateFlow<TrendingNewsState>(TrendingNewsState.Idle)
     val state: StateFlow<TrendingNewsState> = _state.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
@@ -100,22 +99,20 @@ class TrendingNewsViewModel @Inject constructor(
         searchJob?.cancel()
 
         searchJob = viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+            _state.value = TrendingNewsState.Loading
 
             searchNewsUseCase(query)
                 .cachedIn(viewModelScope)
                 .collectLatest { pagingData ->
                     _searchResults.value = pagingData
-                    _state.update { it.copy(isLoading = false) }
+                    _state.value = TrendingNewsState.Idle
                 }
         }
     }
 
     fun clearSearch() {
         _searchResults.value = null
-        _state.update {
-            it.copy(isLoading = false)
-        }
+        _state.value = TrendingNewsState.Idle
     }
 
     private fun toggleFavorite(news: News) {
@@ -125,11 +122,6 @@ class TrendingNewsViewModel @Inject constructor(
                 }
 
                 is DataResult.Error -> {
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                        )
-                    }
                     _events.emit(UIError.from(result.error))
                 }
             }
