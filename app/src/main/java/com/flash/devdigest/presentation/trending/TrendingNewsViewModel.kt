@@ -83,8 +83,7 @@ class TrendingNewsViewModel @Inject constructor(
                 .distinctUntilChanged()
                 .collectLatest { query ->
                     if (query.isBlank()) {
-                        _searchResults.value = null
-                        _state.update { it.copy(isLoading = false) }
+                        clearSearch()
                     } else {
                         performSearch(query)
                     }
@@ -94,8 +93,7 @@ class TrendingNewsViewModel @Inject constructor(
 
     private fun performSearch(query: String) {
         if (query.isBlank()) {
-            _searchResults.value = null
-            _state.update { it.copy(isLoading = false) }
+            clearSearch()
             return
         }
 
@@ -109,6 +107,13 @@ class TrendingNewsViewModel @Inject constructor(
                     _searchResults.value = pagingData
                     _state.update { it.copy(isLoading = false) }
                 }
+        }
+    }
+
+    fun clearSearch() {
+        _searchResults.value = null
+        _state.update {
+            it.copy(isLoading = false)
         }
     }
 
