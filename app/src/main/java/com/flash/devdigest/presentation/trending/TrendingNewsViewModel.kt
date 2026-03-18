@@ -103,6 +103,7 @@ class TrendingNewsViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true) }
 
             searchNewsUseCase(query)
+                .cachedIn(viewModelScope)
                 .collectLatest { pagingData ->
                     _searchResults.value = pagingData
                     _state.update { it.copy(isLoading = false) }
