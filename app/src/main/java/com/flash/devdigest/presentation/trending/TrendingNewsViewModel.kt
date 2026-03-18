@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import com.flash.devdigest.core.NewsResult
+import com.flash.devdigest.core.DataResult
 import com.flash.devdigest.domain.model.News
 import com.flash.devdigest.domain.usecase.ObservePagedTrendingNewsUseCase
 import com.flash.devdigest.domain.usecase.SearchNewsUseCase
@@ -121,10 +121,10 @@ class TrendingNewsViewModel @Inject constructor(
     private fun toggleFavorite(news: News) {
         viewModelScope.launch {
             when (val result = toggleFavoriteUseCase(news)) {
-                is NewsResult.Success -> {
+                is DataResult.Success -> {
                 }
 
-                is NewsResult.Error -> {
+                is DataResult.Error -> {
                     _state.update {
                         it.copy(
                             isLoading = false,

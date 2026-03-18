@@ -5,7 +5,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
-import com.flash.devdigest.core.NewsResult
+import com.flash.devdigest.core.DataResult
 import com.flash.devdigest.data.error.NetworkErrorMapper
 import com.flash.devdigest.data.error.NetworkErrorMapper.toDomain
 import com.flash.devdigest.data.local.AppDatabase
@@ -78,7 +78,7 @@ class NewsRepositoryImpl @Inject constructor(
         ).flow
     }
 
-    override suspend fun toggleFavorite(news: News): NewsResult<Unit> {
+    override suspend fun toggleFavorite(news: News): DataResult<Unit> {
         return withContext(ioDispatcher) {
             try {
                 val existing = newsDao.getNewsById(news.id)
@@ -86,10 +86,10 @@ class NewsRepositoryImpl @Inject constructor(
                     newsDao.insert(news.toEntity())
                 }
                 newsDao.toggleFavorite(news.id)
-                NewsResult.Success(Unit)
+                DataResult.Success(Unit)
             } catch (t: Throwable) {
                 if (t is CancellationException) throw t
-                NewsResult.Error(NetworkErrorMapper.fromThrowable(t).toDomain())
+                DataResult.Error(NetworkErrorMapper.fromThrowable(t).toDomain())
             }
 
         }
