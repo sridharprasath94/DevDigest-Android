@@ -88,7 +88,7 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.pagedNews.collectLatest { pagingData ->
+                viewModel.newsFlow.collectLatest { pagingData ->
                     binding.fullScreenLoader.visibility = View.GONE
                     adapter.submitData(pagingData)
                     binding.swipeRefresh.isRefreshing = false

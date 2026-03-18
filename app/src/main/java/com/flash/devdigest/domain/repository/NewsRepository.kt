@@ -8,9 +8,9 @@ import com.flash.devdigest.core.Result
 interface NewsRepository {
     fun observePagedTrendingNews() : Flow<PagingData<News>>
 
-    suspend fun searchNews(query: String): Result<List<News>>
-
-    suspend fun toggleFavorite(news: News): Result<Unit>
+    fun observeSearchNews(query: String): Flow<PagingData<News>>
 
     fun observeFavoriteNews(): Flow<List<News>>
+
+    suspend fun toggleFavorite(news: News): Result<Unit>
 }
