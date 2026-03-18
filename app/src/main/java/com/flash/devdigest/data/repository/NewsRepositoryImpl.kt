@@ -14,8 +14,8 @@ import com.flash.devdigest.data.local.entity.NewsEntity
 import com.flash.devdigest.data.local.mapper.toDomain
 import com.flash.devdigest.data.local.mapper.toEntity
 import com.flash.devdigest.data.remote.api.NewsApi
-import com.flash.devdigest.data.remote.dto.NewsResponseDto
-import com.flash.devdigest.data.remote.dto.toDomainList
+import com.flash.devdigest.data.remote.paging.NewsRemoteMediator
+import com.flash.devdigest.data.remote.paging.NewsSearchPagingSource
 import com.flash.devdigest.domain.model.News
 import com.flash.devdigest.domain.repository.NewsRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -60,20 +60,23 @@ class NewsRepositoryImpl @Inject constructor(
             }
     }
 
-    override suspend fun searchNews(query: String): Result<List<News>> {
-        return withContext(ioDispatcher) {
-            try {
-                val response: NewsResponseDto = api.searchNews(query)
-                val favoriteIds = newsDao.getFavoriteIdsSet()
-                val news: List<News> = response
-                    .toDomainList()
-                    .applyFavorites(favoriteIds)
-
-                Result.Success(news)
-            } catch (t: Throwable) {
-                if (t is CancellationException) throw t
-                Result.Error(NetworkErrorMapper.fromThrowable(t).toDomain())
+    override fun observeSearchNews(query: String): Flow<PagingData<News>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                initialLoadSize = 20,
+                prefetchDistance = 2,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                NewsSearchPagingSource(
+                    api = api,
+                    query = query,
+                    newsDao = newsDao
+                )
             }
+        ).flow.map { pagingData ->
+            pagingData.map { it }
         }
     }
 
@@ -108,3 +111,5 @@ fun List<News>.applyFavorites(favoriteIds: Set<Long>): List<News> {
 suspend fun NewsDao.observeFavoriteNewsOnce(): List<NewsEntity> {
     return observeFavorites().first()
 }
+
+
