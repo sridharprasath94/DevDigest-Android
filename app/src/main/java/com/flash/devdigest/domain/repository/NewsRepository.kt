@@ -6,6 +6,8 @@ import com.flash.devdigest.domain.model.News
 import kotlinx.coroutines.flow.Flow
 
 interface NewsRepository {
+    suspend fun getNewsById(id: Long): DataResult<News>
+
     fun observePagedTrendingNews() : Flow<PagingData<News>>
 
     fun observeSearchNews(query: String): Flow<PagingData<News>>

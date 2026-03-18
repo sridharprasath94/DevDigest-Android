@@ -16,6 +16,7 @@ import com.flash.devdigest.data.local.mapper.toEntity
 import com.flash.devdigest.data.remote.api.NewsApi
 import com.flash.devdigest.data.remote.paging.NewsRemoteMediator
 import com.flash.devdigest.data.remote.paging.NewsSearchPagingSource
+import com.flash.devdigest.domain.error.DomainError
 import com.flash.devdigest.domain.model.News
 import com.flash.devdigest.domain.repository.NewsRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -32,6 +33,17 @@ class NewsRepositoryImpl @Inject constructor(
     private val newsDao: NewsDao,
     private val ioDispatcher: CoroutineDispatcher
 ) : NewsRepository {
+    override suspend fun getNewsById(id: Long): DataResult<News> {
+        return withContext(ioDispatcher) {
+            val repo = newsDao.getNewsById(id)?.toDomain()
+            if (repo != null) {
+                DataResult.Success(repo)
+            } else {
+                DataResult.Error(DomainError.RepoNotFoundError)
+            }
+        }
+    }
+
     @OptIn(ExperimentalPagingApi::class)
     override fun observePagedTrendingNews(): Flow<PagingData<News>> {
         return Pager(
