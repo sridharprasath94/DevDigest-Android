@@ -2,7 +2,8 @@ package com.flash.devdigest.presentation.favorites
 
 import com.flash.devdigest.domain.model.News
 
-data class FavoriteNewsUiState(
-    val isLoading: Boolean = false,
-    val news: List<News> = emptyList()
-)
+sealed class FavoriteNewsUiState {
+    object Empty : FavoriteNewsUiState()
+    object Loading : FavoriteNewsUiState()
+    data class Success(val repos: List<News>) : FavoriteNewsUiState()
+}

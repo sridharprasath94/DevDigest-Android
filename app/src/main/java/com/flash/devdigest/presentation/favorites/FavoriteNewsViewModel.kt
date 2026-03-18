@@ -2,13 +2,11 @@ package com.flash.devdigest.presentation.favorites
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.flash.devdigest.domain.model.News
 import com.flash.devdigest.domain.usecase.ObserveFavoriteNewsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -16,29 +14,20 @@ import javax.inject.Inject
 class FavoriteReposViewModel @Inject constructor(
     observeFavoriteNewsUseCase: ObserveFavoriteNewsUseCase
 ) : ViewModel() {
-    private val _isLoading = MutableStateFlow(false)
-    private val favoriteReposFlow: StateFlow<List<News>> =
+    val state: StateFlow<FavoriteNewsUiState> =
         observeFavoriteNewsUseCase()
+            .map { news ->
+                if (news.isEmpty()) {
+                    FavoriteNewsUiState.Empty
+                } else {
+                    FavoriteNewsUiState.Success(
+                        news.sortedByDescending { it.isFavorite }
+                    )
+                }
+            }
             .stateIn(
                 scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList()
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = FavoriteNewsUiState.Loading
             )
-
-    val uiState: StateFlow<FavoriteNewsUiState> =
-        combine(
-            favoriteReposFlow,
-            _isLoading,
-        ) { favorites, isLoading ->
-            FavoriteNewsUiState(
-                isLoading = isLoading,
-                news = favorites.sortedBy {
-                    if (it.isFavorite) 0 else 1
-                },
-            )
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = FavoriteNewsUiState(isLoading = true, news = emptyList())
-        )
 }

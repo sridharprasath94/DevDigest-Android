@@ -39,7 +39,7 @@ class NewsRepositoryImpl @Inject constructor(
             if (repo != null) {
                 DataResult.Success(repo)
             } else {
-                DataResult.Error(DomainError.RepoNotFoundError)
+                DataResult.Error(DomainError.NewsNotFoundError)
             }
         }
     }
