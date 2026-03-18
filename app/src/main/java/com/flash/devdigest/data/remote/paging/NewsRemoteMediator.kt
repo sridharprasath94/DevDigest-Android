@@ -1,4 +1,4 @@
-package com.flash.devdigest.data.repository
+package com.flash.devdigest.data.remote.paging
 
 import android.util.Log
 import androidx.paging.ExperimentalPagingApi
@@ -12,6 +12,9 @@ import com.flash.devdigest.data.local.entity.NewsEntity
 import com.flash.devdigest.data.local.mapper.toEntity
 import com.flash.devdigest.data.remote.api.NewsApi
 import com.flash.devdigest.data.remote.dto.toDomainList
+import com.flash.devdigest.data.repository.applyFavorites
+import com.flash.devdigest.data.repository.getFavoriteIdsSet
+import com.flash.devdigest.data.repository.observeFavoriteNewsOnce
 
 @OptIn(ExperimentalPagingApi::class)
 class NewsRemoteMediator(
