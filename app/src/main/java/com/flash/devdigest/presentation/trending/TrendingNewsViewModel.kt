@@ -39,8 +39,8 @@ class TrendingNewsViewModel @Inject constructor(
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow<TrendingNewsState>(TrendingNewsState.Idle)
-    val state: StateFlow<TrendingNewsState> = _state.asStateFlow()
+    private val _state = MutableStateFlow<TrendingNewsUiState>(TrendingNewsUiState.Idle)
+    val state: StateFlow<TrendingNewsUiState> = _state.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
 
@@ -99,20 +99,20 @@ class TrendingNewsViewModel @Inject constructor(
         searchJob?.cancel()
 
         searchJob = viewModelScope.launch {
-            _state.value = TrendingNewsState.Loading
+            _state.value = TrendingNewsUiState.Loading
 
             searchNewsUseCase(query)
                 .cachedIn(viewModelScope)
                 .collectLatest { pagingData ->
                     _searchResults.value = pagingData
-                    _state.value = TrendingNewsState.Idle
+                    _state.value = TrendingNewsUiState.Idle
                 }
         }
     }
 
     fun clearSearch() {
         _searchResults.value = null
-        _state.value = TrendingNewsState.Idle
+        _state.value = TrendingNewsUiState.Idle
     }
 
     private fun toggleFavorite(news: News) {

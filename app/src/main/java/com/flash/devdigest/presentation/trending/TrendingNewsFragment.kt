@@ -75,7 +75,7 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
         adapter.setOnItemClickListener { news ->
             val action =
                 TrendingNewsFragmentDirections
-                    .actionTrendingToDetails(news)
+                    .actionTrendingToDetails(news.id)
 
             findNavController().navigate(action)
         }
@@ -100,10 +100,10 @@ class TrendingNewsFragment : Fragment(R.layout.fragment_trending_news) {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
                     when (state) {
-                        TrendingNewsState.Loading -> binding.fullScreenLoader.visibility =
+                        TrendingNewsUiState.Loading -> binding.fullScreenLoader.visibility =
                             View.VISIBLE
 
-                        TrendingNewsState.Idle -> binding.fullScreenLoader.visibility = View.GONE
+                        TrendingNewsUiState.Idle -> binding.fullScreenLoader.visibility = View.GONE
                     }
                 }
             }

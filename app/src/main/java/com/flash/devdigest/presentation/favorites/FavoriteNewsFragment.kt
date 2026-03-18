@@ -42,7 +42,7 @@ class FavoriteNewsFragment :
         adapter.setOnItemClickListener { repo ->
             val action =
                 FavoriteNewsFragmentDirections
-                    .actionFavoritesToDetails(repo)
+                    .actionFavoritesToDetails(repo.id)
 
             findNavController().navigate(action)
         }
