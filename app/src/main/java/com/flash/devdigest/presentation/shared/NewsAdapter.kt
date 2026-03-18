@@ -1,12 +1,9 @@
 package com.flash.devdigest.presentation.shared
 
-import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
 import com.flash.devdigest.R
 import com.flash.devdigest.databinding.RowNewsBinding
