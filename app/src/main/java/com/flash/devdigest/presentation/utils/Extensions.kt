@@ -1,9 +1,12 @@
 package com.flash.devdigest.presentation.utils
 
 import android.util.DisplayMetrics
+import android.view.View
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.textview.MaterialTextView
 
 fun RecyclerView.fastSmoothScrollToTop() {
 
@@ -27,4 +30,16 @@ fun RecyclerView.fastSmoothScrollToTop() {
 
     smoothScroller.targetPosition = 0
     layoutManager.startSmoothScroll(smoothScroller)
+}
+
+fun View.showCenteredSnackBar(message: String) {
+    val snackBar = Snackbar.make(this, message, Snackbar.LENGTH_SHORT)
+
+    val textView = snackBar.view.findViewById<MaterialTextView>(
+        com.google.android.material.R.id.snackbar_text
+    )
+    textView.textAlignment = View.TEXT_ALIGNMENT_CENTER
+    textView.gravity = android.view.Gravity.CENTER
+
+    snackBar.show()
 }

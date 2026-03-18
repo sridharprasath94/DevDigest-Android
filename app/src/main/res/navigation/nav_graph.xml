@@ -33,7 +33,7 @@
         tools:layout="@layout/fragment_news_detail">
 
         <argument
-            android:name="news"
-            app:argType="com.flash.devdigest.domain.model.News" />
+            android:name="newsId"
+            app:argType="long" />
     </fragment>
 </navigation>

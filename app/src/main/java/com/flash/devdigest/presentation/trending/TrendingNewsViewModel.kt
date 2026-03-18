@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import com.flash.devdigest.core.Result
+import com.flash.devdigest.core.DataResult
 import com.flash.devdigest.domain.model.News
 import com.flash.devdigest.domain.usecase.ObservePagedTrendingNewsUseCase
 import com.flash.devdigest.domain.usecase.SearchNewsUseCase
@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -40,8 +39,8 @@ class TrendingNewsViewModel @Inject constructor(
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(TrendingNewsState())
-    val state: StateFlow<TrendingNewsState> = _state.asStateFlow()
+    private val _state = MutableStateFlow<TrendingNewsUiState>(TrendingNewsUiState.Idle)
+    val state: StateFlow<TrendingNewsUiState> = _state.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
 
@@ -100,36 +99,29 @@ class TrendingNewsViewModel @Inject constructor(
         searchJob?.cancel()
 
         searchJob = viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+            _state.value = TrendingNewsUiState.Loading
 
             searchNewsUseCase(query)
                 .cachedIn(viewModelScope)
                 .collectLatest { pagingData ->
                     _searchResults.value = pagingData
-                    _state.update { it.copy(isLoading = false) }
+                    _state.value = TrendingNewsUiState.Idle
                 }
         }
     }
 
     fun clearSearch() {
         _searchResults.value = null
-        _state.update {
-            it.copy(isLoading = false)
-        }
+        _state.value = TrendingNewsUiState.Idle
     }
 
     private fun toggleFavorite(news: News) {
         viewModelScope.launch {
             when (val result = toggleFavoriteUseCase(news)) {
-                is Result.Success -> {
+                is DataResult.Success -> {
                 }
 
-                is Result.Error -> {
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                        )
-                    }
+                is DataResult.Error -> {
                     _events.emit(UIError.from(result.error))
                 }
             }

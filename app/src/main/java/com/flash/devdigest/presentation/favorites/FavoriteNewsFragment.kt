@@ -29,7 +29,7 @@ class FavoriteNewsFragment :
         super.onViewCreated(view, savedInstanceState)
 
         setupRecyclerView()
-        observeUiState()
+        observeState()
     }
 
 
@@ -42,24 +42,31 @@ class FavoriteNewsFragment :
         adapter.setOnItemClickListener { repo ->
             val action =
                 FavoriteNewsFragmentDirections
-                    .actionFavoritesToDetails(repo)
+                    .actionFavoritesToDetails(repo.id)
 
             findNavController().navigate(action)
         }
     }
 
-    private fun observeUiState() {
+    private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect { state ->
-                    when {
-                        state.isLoading && state.news.isEmpty() -> {
-                            binding.fullScreenLoader.visibility = View.VISIBLE
+                viewModel.state.collect { state ->
+                    when (state) {
+                        FavoriteNewsUiState.Empty -> {
+                            binding.fullScreenLoader.visibility = View.GONE
+                            binding.recyclerView.visibility = View.GONE
                         }
 
-                        else -> {
+                        is FavoriteNewsUiState.Success -> {
                             binding.fullScreenLoader.visibility = View.GONE
-                            adapter.submitData(PagingData.from(state.news))
+                            binding.recyclerView.visibility = View.VISIBLE
+                            adapter.submitData(PagingData.from(state.repos))
+                        }
+
+                        FavoriteNewsUiState.Loading -> {
+                            binding.fullScreenLoader.visibility = View.VISIBLE
+                            binding.recyclerView.visibility = View.GONE
                         }
                     }
                 }

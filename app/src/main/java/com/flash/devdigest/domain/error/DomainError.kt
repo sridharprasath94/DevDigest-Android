@@ -1,6 +1,7 @@
 package com.flash.devdigest.domain.error
 
 sealed class DomainError {
+    object NewsNotFoundError : DomainError()
 
     object NetworkUnavailable : DomainError()
 

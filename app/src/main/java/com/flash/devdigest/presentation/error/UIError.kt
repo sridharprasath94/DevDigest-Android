@@ -3,6 +3,7 @@ package com.flash.devdigest.presentation.error
 import com.flash.devdigest.domain.error.DomainError
 
 sealed class UIError(val message: String) {
+    object NewsNotFoundError : UIError("News is not found")
 
     object NoInternet : UIError("No internet connection. Please check your network.")
 
@@ -16,6 +17,7 @@ sealed class UIError(val message: String) {
 
         fun from(domainError: DomainError): UIError {
             return when (domainError) {
+                DomainError.NewsNotFoundError -> NewsNotFoundError
                 DomainError.NetworkUnavailable -> NoInternet
                 DomainError.RateLimitExceeded -> RateLimited
                 DomainError.InvalidRequest -> BadRequest
