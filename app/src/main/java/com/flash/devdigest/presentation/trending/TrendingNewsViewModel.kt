@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import androidx.paging.map
 import com.flash.devdigest.core.Result
 import com.flash.devdigest.domain.model.News
 import com.flash.devdigest.domain.usecase.ObservePagedTrendingNewsUseCase
@@ -29,10 +28,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 sealed class TrendingNewsIntent {
-    data class Search(val query: String) : TrendingNewsIntent()
     data class OnSearchQueryChanged(val query: String) : TrendingNewsIntent()
     data class ToggleFavorite(val news: News) : TrendingNewsIntent()
-    object ClearSearch : TrendingNewsIntent()
 }
 
 @OptIn(FlowPreview::class)
@@ -72,13 +69,7 @@ class TrendingNewsViewModel @Inject constructor(
 
     fun processIntent(intent: TrendingNewsIntent) {
         when (intent) {
-            is TrendingNewsIntent.Search -> performSearch(intent.query)
-
             is TrendingNewsIntent.OnSearchQueryChanged -> _searchQuery.value = intent.query
-
-            TrendingNewsIntent.ClearSearch -> {
-                _searchResults.value = null
-            }
 
             is TrendingNewsIntent.ToggleFavorite -> toggleFavorite(intent.news)
         }
@@ -92,7 +83,8 @@ class TrendingNewsViewModel @Inject constructor(
                 .distinctUntilChanged()
                 .collectLatest { query ->
                     if (query.isBlank()) {
-                        processIntent(TrendingNewsIntent.ClearSearch)
+                        _searchResults.value = null
+                        _state.update { it.copy(isLoading = false) }
                     } else {
                         performSearch(query)
                     }
@@ -103,6 +95,7 @@ class TrendingNewsViewModel @Inject constructor(
     private fun performSearch(query: String) {
         if (query.isBlank()) {
             _searchResults.value = null
+            _state.update { it.copy(isLoading = false) }
             return
         }
 
@@ -112,7 +105,6 @@ class TrendingNewsViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true) }
 
             searchNewsUseCase(query)
-                .cachedIn(viewModelScope)
                 .collectLatest { pagingData ->
                     _searchResults.value = pagingData
                     _state.update { it.copy(isLoading = false) }
@@ -124,11 +116,6 @@ class TrendingNewsViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = toggleFavoriteUseCase(news)) {
                 is Result.Success -> {
-                    _searchResults.value = _searchResults.value?.map {
-                        if (it.id == news.id)
-                            it.copy(isFavorite = !it.isFavorite)
-                        else it
-                    }
                 }
 
                 is Result.Error -> {
