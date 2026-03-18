@@ -3,7 +3,7 @@ package com.flash.devdigest.domain.repository
 import androidx.paging.PagingData
 import com.flash.devdigest.domain.model.News
 import kotlinx.coroutines.flow.Flow
-import com.flash.devdigest.core.Result
+import com.flash.devdigest.core.NewsResult
 
 interface NewsRepository {
     fun observePagedTrendingNews() : Flow<PagingData<News>>
@@ -12,5 +12,5 @@ interface NewsRepository {
 
     fun observeFavoriteNews(): Flow<List<News>>
 
-    suspend fun toggleFavorite(news: News): Result<Unit>
+    suspend fun toggleFavorite(news: News): NewsResult<Unit>
 }
